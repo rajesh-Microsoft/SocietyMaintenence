@@ -1,0 +1,23 @@
+2025-10-02 15:49:52 - Error: The term 'Import-Excel' is not recognized as the name of a cmdlet, function, script file, or operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try again.
+2025-10-02 15:55:02 - Failed to install/import module 'ImportExcel': File C:\Users\rrathore\OneDrive - Microsoft\Documents\WindowsPowerShell\Modules\ImportExcel\7.8.10\ImportExcel.psm1 cannot be loaded. The file C:\Users\rrathore\OneDrive - Microsoft\Documents\WindowsPowerShell\Modules\ImportExcel\7.8.10\ImportExcel.psm1 is not digitally signed. You cannot run this script on the current system. For more information about running scripts and setting execution policy, see about_Execution_Policies at https:/go.microsoft.com/fwlink/?LinkID=135170.
+2025-10-02 15:55:33 - Watcher Error: You cannot call a method on a null-valued expression.
+2025-10-02 15:55:35 - Watcher Error: You cannot call a method on a null-valued expression.
+2025-10-02 15:55:37 - Watcher Error: You cannot call a method on a null-valued expression.
+2025-10-02 15:55:39 - Watcher Error: You cannot call a method on a null-valued expression.
+2025-10-02 15:55:41 - Watcher Error: You cannot call a method on a null-valued expression.
+2025-10-02 15:55:43 - Watcher Error: You cannot call a method on a null-valued expression.
+2025-10-02 15:56:24 - Error: Required PowerShell modules missing (ImportExcel/Az.Accounts/Az.Storage)
+2025-10-02 15:58:46 - Error: Exception calling ".ctor" with "4" argument(s): "The process cannot access the file 'C:\Users\rrathore\OneDrive - Microsoft\Personal\Society maintenance app\NLC_ Aadya_Society_Maintenance_Tracker.xlsx' because it is being used by another process."
+2025-10-02 16:00:34 - Excel converted to JSON and uploaded/updated in Azure Blob Storage successfully!
+2025-10-02 16:02:59 - Excel converted to JSON and uploaded/updated in Azure Blob Storage successfully!
+2025-10-02 16:04:37 - Excel converted to JSON and uploaded/updated in Azure Blob Storage successfully!
+2025-10-02 16:11:51 - Excel converted to JSON and uploaded/updated in Azure Blob Storage successfully!
+2025-10-02 16:14:33 - Excel converted to JSON and uploaded/updated in Azure Blob Storage successfully!
+2025-10-02 16:16:13 - Excel converted to JSON and uploaded/updated in Azure Blob Storage successfully!
+2025-10-02 19:34:01 - Excel converted to JSON and uploaded/updated in Azure Blob Storage successfully!
+2025-10-02 19:36:27 - Excel converted to JSON and uploaded/updated in Azure Blob Storage successfully!
+2025-10-02 19:37:47 - Excel converted to JSON and uploaded/updated in Azure Blob Storage successfully!
+2025-10-03 16:55:00 - Error: Exception calling ".ctor" with "4" argument(s): "The process cannot access the file 'C:\Users\rrathore\OneDrive - Microsoft\Personal\Society maintenance app\NLC_ Aadya_Society_Maintenance_Tracker.xlsx' because it is being used by another process."
+2025-10-03 16:55:19 - Excel converted to JSON and uploaded/updated in Azure Blob Storage successfully!
+2025-10-03 18:16:09 - Error: Exception calling ".ctor" with "4" argument(s): "The process cannot access the file 'C:\Users\rrathore\OneDrive - Microsoft\Personal\Society maintenance app\NLC_ Aadya_Society_Maintenance_Tracker.xlsx' because it is being used by another process."
+2025-10-03 18:16:25 - Excel converted to JSON and uploaded/updated in Azure Blob Storage successfully!

@@ -1,0 +1,526 @@
+{
+  "Expenses": [
+    {
+      "Date": "07-Sep-2025",
+      "Expense Category": "Watchman Salary",
+      "Vendor/Payee": "Ramesh",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": "SAL202509",
+      "Amount Spent": 12000.0,
+      "Notes": "Sep Salary"
+    },
+    {
+      "Date": null,
+      "Expense Category": null,
+      "Vendor/Payee": null,
+      "Payment Mode": null,
+      "Reference/Transaction ID": null,
+      "Amount Spent": null,
+      "Notes": null
+    },
+    {
+      "Date": null,
+      "Expense Category": null,
+      "Vendor/Payee": null,
+      "Payment Mode": null,
+      "Reference/Transaction ID": null,
+      "Amount Spent": null,
+      "Notes": null
+    },
+    {
+      "Date": null,
+      "Expense Category": null,
+      "Vendor/Payee": null,
+      "Payment Mode": null,
+      "Reference/Transaction ID": "Total Expenses",
+      "Amount Spent": 12000.0,
+      "Notes": null
+    }
+  ],
+  "October": [
+    {
+      "Date": null,
+      "Flat Number": 101.0,
+      "Resident Name": "MR Shiva",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": null,
+      "Amount Received": null,
+      "Notes": "Oct Maintenance"
+    },
+    {
+      "Date": null,
+      "Flat Number": 102.0,
+      "Resident Name": "MR Shiva",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": null,
+      "Amount Received": null,
+      "Notes": "Oct Maintenance"
+    },
+    {
+      "Date": null,
+      "Flat Number": 103.0,
+      "Resident Name": "MR Madhav",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": null,
+      "Amount Received": null,
+      "Notes": "Oct Maintenance"
+    },
+    {
+      "Date": null,
+      "Flat Number": 104.0,
+      "Resident Name": "MR Venkatesh",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": null,
+      "Amount Received": null,
+      "Notes": "Oct Maintenance"
+    },
+    {
+      "Date": "2025-10-02T00:00:00",
+      "Flat Number": 105.0,
+      "Resident Name": "MR Raviteja",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": null,
+      "Amount Received": 2000.0,
+      "Notes": "Oct Maintenance"
+    },
+    {
+      "Date": "2025-10-02T00:00:00",
+      "Flat Number": 201.0,
+      "Resident Name": "MRS Jyothi",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": null,
+      "Amount Received": 2000.0,
+      "Notes": "Oct Maintenance"
+    },
+    {
+      "Date": null,
+      "Flat Number": 202.0,
+      "Resident Name": "MR Veeresh",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": null,
+      "Amount Received": null,
+      "Notes": "Oct Maintenance"
+    },
+    {
+      "Date": null,
+      "Flat Number": 203.0,
+      "Resident Name": "MR Venkat Teja",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": null,
+      "Amount Received": null,
+      "Notes": "Oct Maintenance"
+    },
+    {
+      "Date": null,
+      "Flat Number": 204.0,
+      "Resident Name": "MR Kondal",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": null,
+      "Amount Received": null,
+      "Notes": "Oct Maintenance"
+    },
+    {
+      "Date": null,
+      "Flat Number": 205.0,
+      "Resident Name": "MR Pawan",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": null,
+      "Amount Received": null,
+      "Notes": "Oct Maintenance"
+    },
+    {
+      "Date": null,
+      "Flat Number": 301.0,
+      "Resident Name": "MR Raju",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": null,
+      "Amount Received": null,
+      "Notes": "Oct Maintenance"
+    },
+    {
+      "Date": null,
+      "Flat Number": 302.0,
+      "Resident Name": "MRS Geetha",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": null,
+      "Amount Received": null,
+      "Notes": "Oct Maintenance"
+    },
+    {
+      "Date": null,
+      "Flat Number": 303.0,
+      "Resident Name": "MR Anjan",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": null,
+      "Amount Received": null,
+      "Notes": "Oct Maintenance"
+    },
+    {
+      "Date": "2025-10-02T00:00:00",
+      "Flat Number": 304.0,
+      "Resident Name": "MR Karthik",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": null,
+      "Amount Received": 2000.0,
+      "Notes": "Oct Maintenance"
+    },
+    {
+      "Date": "2025-10-03T00:00:00",
+      "Flat Number": 305.0,
+      "Resident Name": "MR Narsimha",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": null,
+      "Amount Received": 2000.0,
+      "Notes": "Oct Maintenance"
+    },
+    {
+      "Date": null,
+      "Flat Number": 401.0,
+      "Resident Name": "MR Vishwanath",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": null,
+      "Amount Received": null,
+      "Notes": "Oct Maintenance"
+    },
+    {
+      "Date": null,
+      "Flat Number": 402.0,
+      "Resident Name": "MRS Tejowathi",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": null,
+      "Amount Received": null,
+      "Notes": "Oct Maintenance"
+    },
+    {
+      "Date": null,
+      "Flat Number": 403.0,
+      "Resident Name": "MR Sridhar",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": null,
+      "Amount Received": null,
+      "Notes": "Oct Maintenance"
+    },
+    {
+      "Date": "2025-10-01T00:00:00",
+      "Flat Number": 404.0,
+      "Resident Name": "MR Janardhan",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": null,
+      "Amount Received": 2000.0,
+      "Notes": "Oct Maintenance"
+    },
+    {
+      "Date": null,
+      "Flat Number": 405.0,
+      "Resident Name": "MR Aamarnath",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": null,
+      "Amount Received": null,
+      "Notes": "Oct Maintenance"
+    },
+    {
+      "Date": "2025-10-02T00:00:00",
+      "Flat Number": 501.0,
+      "Resident Name": "MR Rajesh",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": null,
+      "Amount Received": 2000.0,
+      "Notes": "Oct Maintenance"
+    },
+    {
+      "Date": "2025-10-02T00:00:00",
+      "Flat Number": 502.0,
+      "Resident Name": "MRS Geetha",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": null,
+      "Amount Received": 2000.0,
+      "Notes": "Oct Maintenance"
+    },
+    {
+      "Date": "2025-10-02T00:00:00",
+      "Flat Number": 503.0,
+      "Resident Name": "MR Subbarao",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": null,
+      "Amount Received": 2000.0,
+      "Notes": "Oct Maintenance"
+    },
+    {
+      "Date": null,
+      "Flat Number": 504.0,
+      "Resident Name": "MR Ravinder",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": null,
+      "Amount Received": null,
+      "Notes": "Oct Maintenance"
+    },
+    {
+      "Date": null,
+      "Flat Number": 505.0,
+      "Resident Name": "MR Kiran",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": null,
+      "Amount Received": null,
+      "Notes": "Oct Maintenance"
+    },
+    {
+      "Date": null,
+      "Flat Number": null,
+      "Resident Name": null,
+      "Payment Mode": null,
+      "Reference/Transaction ID": "Total Collections",
+      "Amount Received": 16000.0,
+      "Notes": null
+    }
+  ],
+  "September": [
+    {
+      "Date": "2025-09-13T00:00:00",
+      "Flat Number": 101.0,
+      "Resident Name": "MR Shiva",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": "UPI/AKKAPOLU S/9963292565\n@ibl/Payment fr/ICICI Ban\nk/484610242062/IBL199a1ea\n3f5f048359bf603d77914d2ec",
+      "Amount Received": 2000.0,
+      "Notes": "Sep Maintenance"
+    },
+    {
+      "Date": "2025-09-13T00:00:00",
+      "Flat Number": 102.0,
+      "Resident Name": "MR Shiva",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": "UPI/AKKAPOLU S/9963292565\n@ibl/Payment fr/ICICI Ban\nk/484610242062/IBL199a1ea\n3f5f048359bf603d77914d2ec",
+      "Amount Received": 2000.0,
+      "Notes": "Sep Maintenance"
+    },
+    {
+      "Date": "2025-09-13T00:00:00",
+      "Flat Number": 103.0,
+      "Resident Name": "MR Madhav",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": "UPI/PAPAGARI M/pmr36@ibl/Payment fr/ICICI Bank/458420100218/IBL4d3f108fa1ea43cb",
+      "Amount Received": 2000.0,
+      "Notes": "Sep Maintenance"
+    },
+    {
+      "Date": "2025-09-16T00:00:00",
+      "Flat Number": 104.0,
+      "Resident Name": "MR Venkatesh",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": "UPI/SEELAM PRA/9441533979-3@y/Venka\ntesh/State Bank/683611522087/YBLaef\n98c92309442498ea183c451baf228",
+      "Amount Received": 2000.0,
+      "Notes": "Sep Maintenance"
+    },
+    {
+      "Date": "2025-09-13T00:00:00",
+      "Flat Number": 105.0,
+      "Resident Name": "MR Raviteja",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": "UPI/GUJARATHI/ravi.teja09129/Flat 105/AXIS BANK/562257283386/AXIf8f75405f3c941d",
+      "Amount Received": 2000.0,
+      "Notes": "Sep Maintenance"
+    },
+    {
+      "Date": "2025-09-13T00:00:00",
+      "Flat Number": 201.0,
+      "Resident Name": "MRS Jyothi",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": "UPI/JYOTHI KON/jyothwe.eptr@o/201/State Bank/562203781501/AXI2d8fbc7947bb46b4b3",
+      "Amount Received": 2000.0,
+      "Notes": "Sep Maintenance"
+    },
+    {
+      "Date": null,
+      "Flat Number": 202.0,
+      "Resident Name": "MR Veeresh",
+      "Payment Mode": null,
+      "Reference/Transaction ID": null,
+      "Amount Received": null,
+      "Notes": "Sep Maintenance"
+    },
+    {
+      "Date": "2025-09-13T00:00:00",
+      "Flat Number": 203.0,
+      "Resident Name": "MR Venkat Teja",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": "UPI/KOPPULA VE/8919013615\n@axl/203 Aadya/State Bank\n/147121325363/AXL4788ab31\n867c440991abdf7724c8f3df",
+      "Amount Received": 2000.0,
+      "Notes": "Sep Maintenance"
+    },
+    {
+      "Date": "2025-09-13T00:00:00",
+      "Flat Number": 204.0,
+      "Resident Name": "MR Kondal",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": "UPI/MOTHE KOND/9652504443@ibl/Flat 204/ICICI Bank/880048612742/IBLa8f1de4fe8fe4",
+      "Amount Received": 2000.0,
+      "Notes": "Sep Maintenance"
+    },
+    {
+      "Date": "2025-09-13T00:00:00",
+      "Flat Number": 205.0,
+      "Resident Name": "MR Pawan",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": "UPI/PAVAN KUMA/tpavan.reddy@a/Payment fr/HDFC BANK/662823558755/AXLa07a4d298303",
+      "Amount Received": 2000.0,
+      "Notes": "Sep Maintenance"
+    },
+    {
+      "Date": "2025-09-13T00:00:00",
+      "Flat Number": 301.0,
+      "Resident Name": "MR Raju",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": "UPI/POTHU RAJU/kannaraju86@ok/UPI/HDFC BANK/525690610362/AXI485931253169407aaa9",
+      "Amount Received": 2000.0,
+      "Notes": "Sep Maintenance"
+    },
+    {
+      "Date": "2025-09-13T00:00:00",
+      "Flat Number": 302.0,
+      "Resident Name": "MRS Geetha",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": "UPI/NALAM RAME/geetha1966n@ok/302 mainte/UNION BANK/562223867452/AXI09a03d00ae9",
+      "Amount Received": 2000.0,
+      "Notes": "Sep Maintenance"
+    },
+    {
+      "Date": "2025-09-13T00:00:00",
+      "Flat Number": 303.0,
+      "Resident Name": "MR Anjan",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": "UPI/KADAPA SRE/9963991980@axi/Paid via C/State Bank/562263167032/ACD01K50YR8CZK",
+      "Amount Received": 2000.0,
+      "Notes": "Sep Maintenance"
+    },
+    {
+      "Date": "2025-09-13T00:00:00",
+      "Flat Number": 304.0,
+      "Resident Name": "MR Karthik",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": "UPI/BALUSUPATI/9686090077@ibl/Payment fr/ICICI Bank/670902513752/IBLdbde6121d77",
+      "Amount Received": 2000.0,
+      "Notes": "Sep Maintenance"
+    },
+    {
+      "Date": "2025-09-13T00:00:00",
+      "Flat Number": 305.0,
+      "Resident Name": "MR Narsimha",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": "UPI/MOTHE KOND/9652504443-3@a/Flat 305/Kotak Mahi/700856012925/AXL5d1074c11b204",
+      "Amount Received": 2000.0,
+      "Notes": "Sep Maintenance"
+    },
+    {
+      "Date": "2025-09-13T00:00:00",
+      "Flat Number": 401.0,
+      "Resident Name": "MR Vishwanath",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": "UPI/VISHWANATH/8839738414\n@yes/Paid via C/HDFC BANK\n/562222864052/YCD01K51R49\nGTCWSHY291S9ETA7DJJpe9Xa\t",
+      "Amount Received": 2000.0,
+      "Notes": "Sep Maintenance"
+    },
+    {
+      "Date": "2025-09-13T00:00:00",
+      "Flat Number": 402.0,
+      "Resident Name": "MRS Tejowathi",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": "UPI/TEJOVATHI/tejovathi.3403/PAY BY\nWHA/HDFC BANK/111225758900/HDFCWC5\n07F2C0BD3DF8FCCC791E1AD28F51",
+      "Amount Received": 2000.0,
+      "Notes": "Sep Maintenance"
+    },
+    {
+      "Date": "2025-09-13T00:00:00",
+      "Flat Number": 403.0,
+      "Resident Name": "MR Sridhar",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": "UPI/P SRIDHAR/p.5460-3@waici/na/HDFC BANK/525694458880/ICIWCF0AF0F5DCC954D67B33",
+      "Amount Received": 2000.0,
+      "Notes": "Sep Maintenance"
+    },
+    {
+      "Date": "2025-09-13T00:00:00",
+      "Flat Number": 404.0,
+      "Resident Name": "MR Janardhan",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": "UPI/GONTLA JAN/gontla.5234@wa/PAY BY WHA/HDFC BANK/111204448899/HDFCWCF90E3B10B",
+      "Amount Received": 2000.0,
+      "Notes": "Sep Maintenance"
+    },
+    {
+      "Date": "2025-09-13T00:00:00",
+      "Flat Number": 405.0,
+      "Resident Name": "MR Aamarnath",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": "UPI/PALAKOLANU/amarreddy15325/Payment fr/Punjab ",
+      "Amount Received": 2000.0,
+      "Notes": "Sep Maintenance"
+    },
+    {
+      "Date": "2025-09-13T00:00:00",
+      "Flat Number": 501.0,
+      "Resident Name": "MR Rajesh",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": "UPI/RAJESH RAT/8297377277@ibl/Payment fr/ICICI Bank/520184983662/IBL6c2c30c2e82",
+      "Amount Received": 2000.0,
+      "Notes": "Sep Maintenance"
+    },
+    {
+      "Date": "2025-09-13T00:00:00",
+      "Flat Number": 502.0,
+      "Resident Name": "MRS Geetha",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": "UPI/TURPU NAGA/nagarjuntoorpu/Payment fr/HDFC BANK/920654599486/YBL4ec3a1db815e",
+      "Amount Received": 2000.0,
+      "Notes": "Sep Maintenance"
+    },
+    {
+      "Date": "2025-09-13T00:00:00",
+      "Flat Number": 503.0,
+      "Resident Name": "MR Subbarao",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": "UPI/SUBBARAO S/8328646852@ibl/Payment fr/ICICI Bank/945375732944/IBL1c710c73a80",
+      "Amount Received": 2000.0,
+      "Notes": "Sep Maintenance"
+    },
+    {
+      "Date": "2025-09-16T00:00:00",
+      "Flat Number": 504.0,
+      "Resident Name": "MR Ravinder",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": "\tUPI/RAVINDER R/krreddy.kothak/Payme\nnt fr/ICICI Bank/204451098609/IBLfe\n2f97e6d8764d6c9a9d4ccf9fcc4548",
+      "Amount Received": 2000.0,
+      "Notes": "Sep Maintenance"
+    },
+    {
+      "Date": "2025-09-13T00:00:00",
+      "Flat Number": 505.0,
+      "Resident Name": "MR Kiran",
+      "Payment Mode": "UPI",
+      "Reference/Transaction ID": "UPI/SHOBA KIRA/9010088522@ybl/Payment fr/HDFC BANK/609946352552/YBLc1d1a847d2a2",
+      "Amount Received": 2000.0,
+      "Notes": "Sep Maintenance"
+    },
+    {
+      "Date": null,
+      "Flat Number": null,
+      "Resident Name": null,
+      "Payment Mode": null,
+      "Reference/Transaction ID": "Total Collections",
+      "Amount Received": 48000.0,
+      "Notes": null
+    }
+  ],
+  "Summary": [
+    {
+      "Metric": "Total Collections",
+      "Value": 64000.0
+    },
+    {
+      "Metric": "Total Expenses",
+      "Value": 12000.0
+    },
+    {
+      "Metric": "Net Balance",
+      "Value": 52000.0
+    }
+  ]
+}

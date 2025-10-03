@@ -1,0 +1,270 @@
+<!--
+Maintenance Tracker - Single-file HTML with multi-sheet month selector
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Society Maintenance Tracker</title>
+  <style>
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial;margin:0;padding:16px;background:#f5f7fb;color:#0f172a}
+    .card{background:#fff;border-radius:8px;box-shadow:0 6px 18px rgba(15,23,42,0.06);padding:16px;margin-bottom:16px}
+    h1{margin:0 0 8px 0;font-size:20px}
+    .controls{display:flex;gap:8px;flex-wrap:wrap}
+    input[type=text], select{padding:8px;border-radius:6px;border:1px solid #d1d5db}
+    button{padding:8px 12px;border-radius:6px;border:0;background:#0b63e6;color:#fff;cursor:pointer}
+    button.ghost{background:#eef2ff;color:#0b63e6}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{padding:8px;border-bottom:1px solid #eef2f6;text-align:left}
+    th{background:#fbfdff;position:sticky;top:0}
+    .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px}
+    .paid{background:#dcfce7;color:#14532d}
+    .unpaid{background:#fee2e2;color:#991b1b}
+    .stats{display:flex;gap:12px;flex-wrap:wrap}
+    .stat{padding:8px 12px;background:#f8fafc;border-radius:8px}
+    .small{font-size:12px;color:#475569}
+    .muted{color:#6b7280}
+    .search{flex:1;min-width:200px}
+    .table-wrap{max-height:60vh;overflow:auto}
+    .action-link{cursor:pointer;color:#0b63e6;text-decoration:underline}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Society Maintenance Tracker</h1>
+    <div class="small muted">Load your Excel/CSV and this single-page app will display, filter, and let you export the maintenance status. Share this HTML file or host it on a static site.</div>
+  </div>
+
+  <div class="card">
+    <div class="controls">
+      <input id="fileInput" type="file" accept=".xlsx,.xls,.csv" />
+      <input id="urlInput" type="text" placeholder="Public URL to .xlsx/.csv (raw GitHub / public file)" style="min-width:360px" />
+      <button id="loadUrlBtn">Load from URL</button>
+      <label><input id="autoRefresh" type="checkbox"/> Auto-refresh</label>
+      <input id="interval" type="number" value="30" style="width:80px"/> <span class="small muted">secs</span>
+      <button id="exportExcel">Export Excel</button>
+      <button id="exportCsv" class="ghost">Export CSV</button>
+      <select id="filterPaid"><option value="all">All</option><option value="paid">Paid</option><option value="unpaid">Unpaid</option></select>
+      <input id="searchBox" class="search" type="text" placeholder="Search name/flat/contact..." />
+      <select id="sheetSelector"><option value="">Select Month/Sheet</option></select>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="stats" id="stats"></div>
+  </div>
+
+  <div class="card table-wrap">
+    <div id="tableContainer"></div>
+  </div>
+
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const urlInput = document.getElementById('urlInput');
+    const loadUrlBtn = document.getElementById('loadUrlBtn');
+    const autoRefreshEl = document.getElementById('autoRefresh');
+    const intervalEl = document.getElementById('interval');
+    const exportExcelBtn = document.getElementById('exportExcel');
+    const exportCsvBtn = document.getElementById('exportCsv');
+    const filterPaidEl = document.getElementById('filterPaid');
+    const searchBox = document.getElementById('searchBox');
+    const statsDiv = document.getElementById('stats');
+    const tableContainer = document.getElementById('tableContainer');
+    const sheetSelector = document.getElementById('sheetSelector');
+
+    let rawData = [];
+    let lastFetchedUrl = null;
+    let pollTimer = null;
+    let currentWorkbook = null;
+
+    function normalizeKey(k){return (k||'').toString().trim().toLowerCase();}
+    function toBooleanPaid(val){
+      if(val===true) return true;
+      if(val===false) return false;
+      if(val==null) return false;
+      const s = String(val).trim().toLowerCase();
+      if(['yes','y','paid','true','1','done'].includes(s)) return true;
+      return false;
+    }
+
+    function renderStats(data){
+      const total = data.length;
+      const paid = data.filter(r=>r.__paid).length;
+      const unpaid = total - paid;
+      const collected = data.reduce((s,r)=>s + (parseFloat(r.Amount||0)||0),0);
+      statsDiv.innerHTML = `
+        <div class="stat"><strong>${total}</strong> total</div>
+        <div class="stat"><strong>${paid}</strong> paid</div>
+        <div class="stat"><strong>${unpaid}</strong> unpaid</div>
+        <div class="stat"><strong>₹ ${collected.toFixed(2)}</strong> collected</div>
+      `;
+    }
+
+    function renderTable(){
+      const filter = filterPaidEl.value;
+      const q = (searchBox.value||'').trim().toLowerCase();
+      const display = rawData.filter(row=>{
+        if(filter==='paid' && !row.__paid) return false;
+        if(filter==='unpaid' && row.__paid) return false;
+        if(q){
+          const hay = Object.values(row).join(' ').toLowerCase();
+          if(!hay.includes(q)) return false;
+        }
+        return true;
+      });
+
+      renderStats(display);
+
+      if(display.length===0){ tableContainer.innerHTML = '<div class="small muted">No records to show</div>'; return; }
+
+      const cols = Object.keys(display[0]).filter(c=>!c.startsWith('__'));
+      const table = document.createElement('table');
+      const thead = document.createElement('thead');
+      const trh = document.createElement('tr');
+      cols.forEach(c=>{ const th = document.createElement('th'); th.textContent = c; trh.appendChild(th); });
+      const thAct = document.createElement('th'); thAct.textContent='Actions'; trh.appendChild(thAct);
+      thead.appendChild(trh); table.appendChild(thead);
+
+      const tbody = document.createElement('tbody');
+      display.forEach((row,idx)=>{
+        const tr = document.createElement('tr');
+        cols.forEach(c=>{
+          const td = document.createElement('td');
+          td.textContent = row[c] == null ? '' : row[c];
+          tr.appendChild(td);
+        });
+        const tdAct = document.createElement('td');
+        const toggle = document.createElement('span'); toggle.className='action-link'; toggle.textContent = row.__paid? 'Mark Unpaid' : 'Mark Paid';
+        toggle.onclick = ()=>{ row.__paid = !row.__paid; if(row.__paid) row.PaymentDate = formatDate(new Date()); else row.PaymentDate = ''; renderTable(); };
+        tdAct.appendChild(toggle);
+        tdAct.appendChild(document.createTextNode(' | '));
+        const copy = document.createElement('span'); copy.className='action-link'; copy.textContent='Copy'; copy.onclick=()=>{navigator.clipboard.writeText(JSON.stringify(row));};
+        tdAct.appendChild(copy);
+        tr.appendChild(tdAct);
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      tableContainer.innerHTML='';
+      tableContainer.appendChild(table);
+    }
+
+    function excelSerialToJSDate(serial){
+      const utc_days = Math.floor(serial - 25569);
+      const utc_value = utc_days * 86400;
+      const fractional_day = serial - Math.floor(serial);
+      const seconds = Math.round(86400 * fractional_day);
+      const date = new Date((utc_value + seconds) * 1000);
+      return new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+    }
+
+    function formatDate(val){
+      if(val === null || val === undefined || val === '') return '';
+      if(val instanceof Date && !isNaN(val)){
+        const d = val.getDate().toString().padStart(2,'0');
+        const m = (val.getMonth()+1).toString().padStart(2,'0');
+        const y = val.getFullYear();
+        return d+"-"+m+"-"+y;
+      }
+      if(typeof val === 'number' && !isNaN(val)){
+        try{ return formatDate(excelSerialToJSDate(val)); }catch(e){}
+      }
+      const s = String(val).trim();
+      const parsed = Date.parse(s);
+      if(!isNaN(parsed)) return formatDate(new Date(parsed));
+      return s;
+    }
+
+    function normalizeRows(rows){
+      return rows.map(r=>{
+        const out = {};
+        const aliases = {name:['name','owner','resident'], flat:['flat','flatno','flat no','flat_number'], amount:['amount','maintenance','fees'], paid:['paid','status'], paymentdate:['paymentdate','date'], contact:['contact','phone','mobile']};
+        const lowerMap = {};
+        for(const k of Object.keys(r)) lowerMap[normalizeKey(k)] = k;
+        for(const target of ['Name','Flat','Amount','Paid','PaymentDate','Contact']){
+          let foundKey=null;
+          for(const alias of (aliases[target.toLowerCase()]||[])){
+            if(lowerMap[alias]){foundKey=lowerMap[alias];break;}
+          }
+          if(!foundKey && lowerMap[target.toLowerCase()]) foundKey=lowerMap[target.toLowerCase()];
+          if(foundKey) out[target]=r[foundKey];
+        }
+        for(const k of Object.keys(r)){
+          if(['name','flat','amount','paid','paymentdate','contact'].includes(normalizeKey(k))) continue;
+          out[k]=r[k];
+        }
+        out.__paid = toBooleanPaid(out.Paid);
+        if(out.Amount) out.Amount=out.Amount.toString().replace(/[₹, ]/g,'');
+        if(out.PaymentDate) out.PaymentDate=formatDate(out.PaymentDate);
+        return out;
+      });
+    }
+
+    function handleWorkbook(workbook){
+      currentWorkbook = workbook;
+      sheetSelector.innerHTML = '<option value="">Select Month/Sheet</option>';
+      workbook.SheetNames.forEach(name=>{
+        const opt=document.createElement('option');
+        opt.value=name; opt.textContent=name;
+        sheetSelector.appendChild(opt);
+      });
+      if(workbook.SheetNames.length){
+        loadSheet(workbook.SheetNames[0]);
+        sheetSelector.value=workbook.SheetNames[0];
+      }
+    }
+
+    function loadSheet(name){
+      if(!currentWorkbook) return;
+      const sheet=currentWorkbook.Sheets[name];
+      if(!sheet) return;
+      const rows=XLSX.utils.sheet_to_json(sheet,{defval:'',cellDates:true,raw:false});
+      rawData=normalizeRows(rows);
+      renderTable();
+    }
+
+    sheetSelector.addEventListener('change',()=>{if(sheetSelector.value) loadSheet(sheetSelector.value);});
+
+    fileInput.addEventListener('change',(e)=>{
+      const f=e.target.files[0]; if(!f) return;
+      const reader=new FileReader();
+      reader.onload=function(ev){
+        const data=ev.target.result;
+        let wb;
+        try{wb=XLSX.read(data,{type:'array'});}catch(err){wb=XLSX.read(data,{type:'binary'});}
+        handleWorkbook(wb);
+      };
+      reader.readAsArrayBuffer(f);
+    });
+
+    async function fetchAndLoad(url){
+      try{
+        const res=await fetch(url);
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        const buf=await res.arrayBuffer();
+        const wb=XLSX.read(buf,{type:'array'});
+        handleWorkbook(wb);
+        lastFetchedUrl=url;
+      }catch(err){alert('Error loading URL: '+err.message);}
+    }
+
+    loadUrlBtn.addEventListener('click',()=>{const url=urlInput.value.trim(); if(!url) return alert('Enter a URL'); fetchAndLoad(url); if(autoRefreshEl.checked) startPolling();});
+    autoRefreshEl.addEventListener('change',()=>{if(autoRefreshEl.checked) startPolling(); else stopPolling();});
+    function startPolling(){stopPolling(); const interval=Math.max(5,parseInt(intervalEl.value||30,10)); pollTimer=setInterval(()=>{if(lastFetchedUrl) fetchAndLoad(lastFetchedUrl);},interval*1000);} 
+    function stopPolling(){if(pollTimer){clearInterval(pollTimer);pollTimer=null;}}
+
+    filterPaidEl.addEventListener('change', renderTable);
+    searchBox.addEventListener('input', debounce(renderTable,300));
+    function debounce(fn,wait){let t;return function(...a){clearTimeout(t);t=setTimeout(()=>fn(...a),wait);};}
+
+    exportCsvBtn.addEventListener('click',()=>{if(!rawData.length) return alert('No data'); const cols=Object.keys(rawData[0]).filter(c=>!c.startsWith('__')); const lines=[cols.join(',')]; rawData.forEach(r=>{lines.push(cols.map(c=>escapeCsv(r[c]||'')).join(','));}); const blob=new Blob([lines.join('\n')],{type:'text/csv'}); const url=URL.createObjectURL(blob); downloadUrl(url,'maintenance_export.csv'); URL.revokeObjectURL(url);});
+    function escapeCsv(v){if(v==null) return ''; const s=String(v).replace(/"/g,'""'); if(s.includes(',')||s.includes('"')||s.includes('\n')) return '"'+s+'"'; return s;}
+    exportExcelBtn.addEventListener('click',()=>{if(!rawData.length) return alert('No data'); const outRows=rawData.map(r=>{const o={}; for(const k of Object.keys(r)) if(!k.startsWith('__')) o[k]=r[k]; return o;}); const ws=XLSX.utils.json_to_sheet(outRows); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,sheetSelector.value||'Maintenance'); const wbout=XLSX.write(wb,{bookType:'xlsx',type:'array'}); const blob=new Blob([wbout],{type:'application/octet-stream'}); const url=URL.createObjectURL(blob); downloadUrl(url,'maintenance_export.xlsx'); URL.revokeObjectURL(url);});
+    function downloadUrl(url,filename){const a=document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove();}
+
+    urlInput.addEventListener('keydown',(e)=>{if(e.key==='Enter'){loadUrlBtn.click();}});
+    tableContainer.innerHTML='<div class="small muted">No data loaded. Upload a spreadsheet or provide a public URL.</div>';
+  </script>
+</body>
+</html>

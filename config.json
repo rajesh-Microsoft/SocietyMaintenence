@@ -1,0 +1,13 @@
+✅ Updated the page to load the admin password from an external `config.json` file.
+
+* If `config.json` exists with a key `"adminPassword"`, it will be used.
+* Otherwise, the default password `admin123` is used.
+* The **Admin Mode Active badge** remains visible when logged in.
+
+You’ll just need to create a `config.json` like this in the same folder as your HTML:
+
+```json
+{
+  "adminPassword": "rajesh123"
+}
+```

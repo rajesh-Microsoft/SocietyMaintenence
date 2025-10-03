@@ -1,0 +1,310 @@
+<!--
+Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Society Maintenance Tracker</title>
+  <style>
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial;margin:0;padding:16px;background:#f5f7fb;color:#0f172a}
+    .card{background:#fff;border-radius:8px;box-shadow:0 6px 18px rgba(15,23,42,0.06);padding:16px;margin-bottom:16px}
+    h1{margin:0 0 8px 0;font-size:20px}
+    .controls{display:flex;gap:8px;flex-wrap:wrap}
+    input[type=text], select{padding:8px;border-radius:6px;border:1px solid #d1d5db}
+    button{padding:8px 12px;border-radius:6px;border:0;background:#0b63e6;color:#fff;cursor:pointer}
+    button.ghost{background:#eef2ff;color:#0b63e6}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{padding:8px;border-bottom:1px solid #eef2f6;text-align:left}
+    th{background:#fbfdff;position:sticky;top:0}
+    .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px}
+    .paid{background:#dcfce7;color:#14532d}
+    .unpaid{background:#fee2e2;color:#991b1b}
+    .stats{display:flex;gap:12px;flex-wrap:wrap}
+    .stat{padding:8px 12px;background:#f8fafc;border-radius:8px}
+    .small{font-size:12px;color:#475569}
+    .muted{color:#6b7280}
+    .search{flex:1;min-width:200px}
+    .table-wrap{max-height:60vh;overflow:auto}
+    .action-link{cursor:pointer;color:#0b63e6;text-decoration:underline}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Society Maintenance Tracker</h1>
+    <div class="small muted">This app pulls maintenance data directly from Azure Blob Storage JSON file and displays, filters, and exports the status.</div>
+  </div>
+
+  <div class="card">
+    <div class="controls">
+      <button id="exportExcel">Export Excel</button>
+      <button id="exportCsv" class="ghost">Export CSV</button>
+      <select id="filterPaid"><option value="all">All</option><option value="paid">Paid</option><option value="unpaid">Unpaid</option></select>
+      <input id="searchBox" class="search" type="text" placeholder="Search name/flat/contact..." />
+      <select id="monthFilter"><option value="all">All Months</option></select>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="stats" id="stats"></div>
+  </div>
+
+  <div class="card table-wrap">
+    <div id="tableContainer"></div>
+  </div>
+
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+  <script>
+    const exportExcelBtn = document.getElementById('exportExcel');
+    const exportCsvBtn = document.getElementById('exportCsv');
+    const filterPaidEl = document.getElementById('filterPaid');
+    const searchBox = document.getElementById('searchBox');
+    const statsDiv = document.getElementById('stats');
+    const tableContainer = document.getElementById('tableContainer');
+    const monthFilter = document.getElementById('monthFilter');
+
+    let rawData = [];
+    let columnFilters = {};
+
+    function normalizeKey(k){return (k||'').toString().trim().toLowerCase();}
+    function toBooleanPaid(val){
+      if(val===true) return true;
+      if(val===false) return false;
+      if(val==null) return false;
+      const s = String(val).trim().toLowerCase();
+      if(['yes','y','paid','true','1','done'].includes(s)) return true;
+      return false;
+    }
+
+    function renderStats(data){
+      const total = data.length;
+      const paid = data.filter(r=>r.__paid).length;
+      const unpaid = total - paid;
+      const collected = data.reduce((s,r)=>s + (parseFloat(r.Amount||0)||0),0);
+      statsDiv.innerHTML = `
+        <div class="stat"><strong>${total}</strong> total</div>
+        <div class="stat"><strong>${paid}</strong> paid</div>
+        <div class="stat"><strong>${unpaid}</strong> unpaid</div>
+        <div class="stat"><strong>₹ ${collected.toFixed(2)}</strong> collected</div>
+      `;
+    }
+
+    function renderTable(){
+      const filter = filterPaidEl.value;
+      const q = (searchBox.value||'').trim().toLowerCase();
+      const selectedMonth = monthFilter.value;
+      const baseFiltered = rawData.filter(row=>{
+        if(selectedMonth !== 'all' && row.Month && row.Month !== selectedMonth) return false;
+        if(filter==='paid' && !row.__paid) return false;
+        if(filter==='unpaid' && row.__paid) return false;
+        if(q){
+          const hay = Object.values(row).join(' ').toLowerCase();
+          if(!hay.includes(q)) return false;
+        }
+        return true;
+      });
+      const display = baseFiltered.filter(row=>{
+        for(const key in columnFilters){
+          const val = (columnFilters[key]||'').toString().trim();
+          if(!val) continue;
+          if(key==='Paid'){
+            if(val==='paid' && !row.__paid) return false;
+            if(val==='unpaid' && row.__paid) return false;
+            continue;
+          }
+          const cell = row[key];
+          const cellStr = (cell==null? '' : String(cell));
+          if(cellStr !== val) return false;
+        }
+        return true;
+      });
+
+      renderStats(display);
+
+      if(display.length===0){ tableContainer.innerHTML = '<div class="small muted">No records to show</div>'; return; }
+
+      const cols = Object.keys(display[0]).filter(c=>!c.startsWith('__'));
+      const table = document.createElement('table');
+      const thead = document.createElement('thead');
+      const trh = document.createElement('tr');
+      cols.forEach(c=>{ const th = document.createElement('th'); th.textContent = c; trh.appendChild(th); });
+      const thAct = document.createElement('th'); thAct.textContent='Actions'; trh.appendChild(thAct);
+      thead.appendChild(trh);
+      // filters row with dropdowns populated from baseFiltered unique values
+      const trf = document.createElement('tr');
+      cols.forEach(c=>{
+        const th = document.createElement('th');
+        const sel=document.createElement('select');
+        if(c==='Paid'){
+          sel.innerHTML='<option value="">All</option><option value="paid">Paid</option><option value="unpaid">Unpaid</option>';
+        }else{
+          const seen = new Set();
+          const values = [];
+          baseFiltered.forEach(r=>{
+            const v = r[c];
+            const s = (v==null? '' : String(v));
+            if(s===''||seen.has(s)) return;
+            seen.add(s); values.push(s);
+          });
+          values.sort((a,b)=>a.localeCompare(b, undefined, {numeric:true, sensitivity:'base'}));
+          const opts = ['<option value="">All</option>'].concat(values.map(v=>'<option value="'+v.replace(/"/g,'&quot;')+'">'+v.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</option>'));
+          sel.innerHTML = opts.join('');
+        }
+        sel.value = (columnFilters[c]||'');
+        sel.addEventListener('change',()=>{ columnFilters[c]=sel.value; renderTable(); });
+        th.appendChild(sel);
+        trf.appendChild(th);
+      });
+      const thEmpty=document.createElement('th'); trf.appendChild(thEmpty);
+      thead.appendChild(trf);
+      table.appendChild(thead);
+
+      const tbody = document.createElement('tbody');
+      display.forEach((row,idx)=>{
+        const tr = document.createElement('tr');
+        cols.forEach(c=>{
+          const td = document.createElement('td');
+          td.textContent = row[c] == null ? '' : row[c];
+          tr.appendChild(td);
+        });
+        const tdAct = document.createElement('td');
+        const toggle = document.createElement('span'); toggle.className='action-link'; toggle.textContent = row.__paid? 'Mark Unpaid' : 'Mark Paid';
+        toggle.onclick = ()=>{ row.__paid = !row.__paid; if(row.__paid) row.PaymentDate = new Date().toLocaleDateString(); else row.PaymentDate = ''; renderTable(); };
+        tdAct.appendChild(toggle);
+        tdAct.appendChild(document.createTextNode(' | '));
+        const copy = document.createElement('span'); copy.className='action-link'; copy.textContent='Copy'; copy.onclick=()=>{navigator.clipboard.writeText(JSON.stringify(row));};
+        tdAct.appendChild(copy);
+        tr.appendChild(tdAct);
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      tableContainer.innerHTML='';
+      tableContainer.appendChild(table);
+    }
+
+    function buildRowsFromMaintenanceJson(json){
+      const rows = [];
+      const sectionNames = Object.keys(json||{});
+      sectionNames.forEach(section=>{
+        if(['Expenses','Summary'].includes(section)) return;
+        const list = Array.isArray(json[section]) ? json[section] : [];
+        list.forEach(item=>{
+          const ref = String(item['Reference/Transaction ID']||'');
+          if(ref.toLowerCase().includes('total collections')) return;
+          const amountNum = Number(item['Amount Received']||0) || 0;
+          const flatRaw = item['Flat Number'];
+          const flatVal = Number.isFinite(flatRaw) ? (Number.isInteger(flatRaw)? flatRaw : Math.trunc(flatRaw)) : (flatRaw||'');
+          const row = {
+            Month: section,
+            Name: item['Resident Name']||'',
+            Flat: flatVal,
+            Amount: amountNum,
+            Paid: amountNum>0 ? 'Paid' : '',
+            PaymentDate: item['Date']||'',
+            'Payment Mode': item['Payment Mode']||'',
+            'Reference/Transaction ID': ref,
+            Notes: item['Notes']||''
+          };
+          row.__paid = amountNum>0;
+          rows.push(row);
+        });
+      });
+      return rows;
+    }
+
+    function normalizeRows(rows){
+      return rows.map(r=>{
+        const out = {};
+        const aliases = {name:['name','owner','resident'], flat:['flat','flatno','flat no','flat_number'], amount:['amount','maintenance','fees'], paid:['paid','status'], paymentdate:['paymentdate','date'], contact:['contact','phone','mobile']};
+        const lowerMap = {};
+        for(const k of Object.keys(r)) lowerMap[normalizeKey(k)] = k;
+        for(const target of ['Name','Flat','Amount','Paid','PaymentDate','Contact']){
+          let foundKey=null;
+          for(const alias of (aliases[target.toLowerCase()]||[])){
+            if(lowerMap[alias]){foundKey=lowerMap[alias];break;}
+          }
+          if(!foundKey && lowerMap[target.toLowerCase()]) foundKey=lowerMap[target.toLowerCase()];
+          if(foundKey) out[target]=r[foundKey];
+        }
+        for(const k of Object.keys(r)){
+          if(['name','flat','amount','paid','paymentdate','contact'].includes(normalizeKey(k))) continue;
+          out[k]=r[k];
+        }
+        out.__paid = toBooleanPaid(out.Paid);
+        if(out.Amount) out.Amount=out.Amount.toString().replace(/[₹, ]/g,'');
+        return out;
+      });
+    }
+
+    // Export CSV
+    exportCsvBtn.addEventListener('click',()=>{
+      if(!rawData.length) return alert('No data');
+      const cols=Object.keys(rawData[0]).filter(c=>!c.startsWith('__'));
+      const lines=[cols.join(',')];
+      rawData.forEach(r=>{lines.push(cols.map(c=>escapeCsv(r[c]||'')).join(','));});
+      const blob=new Blob([lines.join('\n')],{type:'text/csv'});
+      const url=URL.createObjectURL(blob);
+      downloadUrl(url,'maintenance_export.csv');
+      URL.revokeObjectURL(url);
+    });
+    function escapeCsv(v){if(v==null) return ''; const s=String(v).replace(/"/g,'""'); if(s.includes(',')||s.includes('"')||s.includes('\n')) return '"'+s+'"'; return s;}
+
+    // Export Excel
+    exportExcelBtn.addEventListener('click',()=>{
+      if(!rawData.length) return alert('No data');
+      const outRows=rawData.map(r=>{const o={}; for(const k of Object.keys(r)) if(!k.startsWith('__')) o[k]=r[k]; return o;});
+      const ws=XLSX.utils.json_to_sheet(outRows);
+      const wb=XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb,ws,'Maintenance');
+      const wbout=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+      const blob=new Blob([wbout],{type:'application/octet-stream'});
+      const url=URL.createObjectURL(blob);
+      downloadUrl(url,'maintenance_export.xlsx');
+      URL.revokeObjectURL(url);
+    });
+    function downloadUrl(url,filename){const a=document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove();}
+
+    // Fetch JSON directly from Azure Blob Storage
+    async function loadFromAzure(){
+      try{
+        const res = await fetch("https://societymantaintracker.blob.core.windows.net/files/maintenance_data.json");
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        const json = await res.json();
+        if(Array.isArray(json)){
+          rawData = normalizeRows(json);
+        }else{
+          rawData = buildRowsFromMaintenanceJson(json);
+        }
+        if(!rawData || !rawData.length) throw new Error('No records found');
+        populateMonthFilter();
+        renderTable();
+      }catch(err){
+        tableContainer.innerHTML = '<div class="small muted">Error loading data: '+err.message+'</div>';
+      }
+    }
+
+    function populateMonthFilter(){
+      if(!monthFilter) return;
+      const seen = new Set();
+      const options = ['<option value="all">All Months</option>'];
+      rawData.forEach(r=>{
+        if(r.Month && !seen.has(r.Month)){
+          seen.add(r.Month);
+          options.push('<option value="'+r.Month+'">'+r.Month+'</option>');
+        }
+      });
+      monthFilter.innerHTML = options.join('');
+    }
+
+    filterPaidEl.addEventListener('change', renderTable);
+    monthFilter.addEventListener('change', renderTable);
+    searchBox.addEventListener('input', debounce(renderTable,300));
+    function debounce(fn,wait){let t;return function(...a){clearTimeout(t);t=setTimeout(()=>fn(...a),wait);};}
+
+    // Load on page ready
+    loadFromAzure();
+
+  </script>
+</body>
+</html>

@@ -1,0 +1,695 @@
+<!--
+Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Society Maintenance Tracker</title>
+  <style>
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial;margin:0;padding:16px;background:#f5f7fb;color:#0f172a}
+    .ticker{position:relative;overflow:hidden;background:#fffbe6;border:1px solid #fde68a;color:#92400e;border-radius:8px;margin:0 0 12px 0}
+    .ticker__track{white-space:nowrap;display:flex;gap:48px;padding:8px 12px;animation:tickerMove 25s linear infinite}
+    @keyframes tickerMove{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+    .banner{background:#fff7ed;color:#7c2d12;border:1px solid #fed7aa;border-radius:8px;padding:10px 12px;margin:0 0 12px 0;box-shadow:0 2px 8px rgba(15,23,42,0.04)}
+    .card{background:#fff;border-radius:8px;box-shadow:0 6px 18px rgba(15,23,42,0.06);padding:16px;margin-bottom:16px}
+    h1{margin:0 0 8px 0;font-size:20px}
+    .controls{display:flex;gap:8px;flex-wrap:wrap}
+    input[type=text], select{padding:8px;border-radius:6px;border:1px solid #d1d5db}
+    button{padding:8px 12px;border-radius:6px;border:0;background:#0b63e6;color:#fff;cursor:pointer}
+    button.ghost{background:#eef2ff;color:#0b63e6}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{padding:8px;border-bottom:1px solid #eef2f6;text-align:left}
+    th{background:#fbfdff;position:sticky;top:0}
+    .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px}
+    .paid{background:#dcfce7;color:#14532d}
+    .unpaid{background:#fee2e2;color:#991b1b}
+    .stats{display:flex;gap:12px;flex-wrap:wrap}
+    .stat{padding:8px 12px;background:#f8fafc;border-radius:8px}
+    .small{font-size:12px;color:#475569}
+    .muted{color:#6b7280}
+    .search{flex:1;min-width:200px}
+    .table-wrap{max-height:60vh;overflow:auto}
+    .action-link{cursor:pointer;color:#0b63e6;text-decoration:underline}
+  </style>
+</head>
+<body>
+  <div class="ticker">
+    <div class="ticker__track">
+      <span>"This app is currently under development, so some data may be inconsistent. Don’t worry—we’re on it and will take care of everything.</span>
+      <span>This app is currently under development, so some data may be inconsistent. Don’t worry—we’re on it and will take care of everything.</span>
+      <span>This app is currently under development, so some data may be inconsistent. Don’t worry—we’re on it and will take care of everything".</span>
+    </div>
+  </div>
+  <div class="banner">
+    <strong>Reminder:</strong> Please pay your maintenance before 10th of every month via UPI <strong>7697806560icici@ybl</strong>.
+  </div>
+  <div class="card">
+    <h1>NLC Aadya Society Maintenance Tracker</h1>
+    <div class="small muted">This app pulls maintenance data directly from Azure Blob Storage JSON file and displays, filters, and exports the status.</div>
+  </div>
+
+  <div class="card" id="topSummaryCard" style="display:none">
+    <h1>Summary</h1>
+    <div class="controls" style="margin: 8px 0 12px 0">
+      <select id="monthFilter"><option value="all">All Months</option></select>
+    </div>
+    <div class="stats" id="topSummary"></div>
+  </div>
+
+  <div class="card">
+    <div class="controls">
+      <button id="tabCollected">Collected</button>
+      <button id="tabExpenses" class="ghost">Expenses</button>
+      <button id="tabFuture1" class="ghost">Future 1</button>
+      <button id="tabFuture2" class="ghost">Future 2</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="controls">
+      <button id="exportExcel">Export Excel</button>
+      <button id="exportCsv" class="ghost">Export CSV</button>
+      <button id="clearFilters" class="ghost">Clear Filters</button>
+      <select id="filterPaid"><option value="all">All</option><option value="paid">Paid</option><option value="unpaid">Unpaid</option></select>
+      <input id="searchBox" class="search" type="text" placeholder="Search name/flat/contact..." />
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="stats" id="stats"></div>
+    <div class="small muted" id="filterSummary"></div>
+  </div>
+
+  <div class="card table-wrap">
+    <div id="tableContainer"></div>
+  </div>
+
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+  <script>
+    const exportExcelBtn = document.getElementById('exportExcel');
+    const exportCsvBtn = document.getElementById('exportCsv');
+    const filterPaidEl = document.getElementById('filterPaid');
+    const clearFiltersBtn = document.getElementById('clearFilters');
+    const searchBox = document.getElementById('searchBox');
+    const statsDiv = document.getElementById('stats');
+    const tableContainer = document.getElementById('tableContainer');
+    const monthFilter = document.getElementById('monthFilter');
+    const tabCollectedBtn = document.getElementById('tabCollected');
+    const tabExpensesBtn = document.getElementById('tabExpenses');
+    const tabFuture1Btn = document.getElementById('tabFuture1');
+    const tabFuture2Btn = document.getElementById('tabFuture2');
+    const filterSummary = document.getElementById('filterSummary');
+    const topSummaryCard = document.getElementById('topSummaryCard');
+    const topSummaryDiv = document.getElementById('topSummary');
+
+    let rawData = [];
+    let columnFilters = {};
+    let expensesData = [];
+    let expensesColumnFilters = {};
+    let currentTab = 'collected'; // collected | expenses | future1 | future2
+    let ADMIN_PASSWORD = 'admin123';
+    let UPDATE_ENDPOINT = null; // optional, can be set via config.json
+    let UPDATE_BLOB_SAS_URL = null; // optional SAS URL with write perms to maintenance_data.json
+    const READ_JSON_URL = "https://societymantaintracker.blob.core.windows.net/files/maintenance_data.json";
+    let summaryData = [];
+
+    function normalizeKey(k){return (k||'').toString().trim().toLowerCase();}
+    function toBooleanPaid(val){
+      if(val===true) return true;
+      if(val===false) return false;
+      if(val==null) return false;
+      const s = String(val).trim().toLowerCase();
+      if(['yes','y','paid','true','1','done'].includes(s)) return true;
+      return false;
+    }
+
+    function excelSerialToJSDate(serial){
+      const utc_days = Math.floor(serial - 25569);
+      const utc_value = utc_days * 86400;
+      const fractional_day = serial - Math.floor(serial);
+      const seconds = Math.round(86400 * fractional_day);
+      const date = new Date((utc_value + seconds) * 1000);
+      return new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+    }
+    function formatDate(val){
+      if(val === null || val === undefined || val === '') return '';
+      if(val instanceof Date && !isNaN(val)){
+        const d = val.getDate().toString().padStart(2,'0');
+        const m = (val.getMonth()+1).toString().padStart(2,'0');
+        const y = val.getFullYear();
+        return d+"-"+m+"-"+y;
+      }
+      if(typeof val === 'number' && !isNaN(val)){
+        try{ return formatDate(excelSerialToJSDate(val)); }catch(e){}
+      }
+      const s = String(val).trim();
+      const parsed = Date.parse(s);
+      if(!isNaN(parsed)) return formatDate(new Date(parsed));
+      return s;
+    }
+
+    function getMonthNameFromDateValue(val){
+      if(!val) return '';
+      let d=null;
+      if(val instanceof Date && !isNaN(val)) d=val;
+      else if(typeof val==='number' && !isNaN(val)) { try{ d=excelSerialToJSDate(val); }catch(e){} }
+      if(!d){
+        const s=String(val).trim();
+        const parsed=Date.parse(s);
+        if(!isNaN(parsed)) d=new Date(parsed);
+      }
+      if(!d || isNaN(d)) return '';
+      return d.toLocaleString(undefined,{month:'long'});
+    }
+
+    function renderCollectedStats(data){
+      const total = data.length;
+      const paid = data.filter(r=>r.__paid).length;
+      const unpaid = total - paid;
+      const collected = data.reduce((s,r)=>s + (parseFloat(r.Amount||0)||0),0);
+      statsDiv.innerHTML = `
+        <div class="stat"><strong>${total}</strong> total</div>
+        <div class="stat"><strong>${paid}</strong> paid</div>
+        <div class="stat"><strong>${unpaid}</strong> unpaid</div>
+        <div class="stat"><strong>₹ ${collected.toFixed(2)}</strong> collected</div>
+      `;
+    }
+
+    function renderExpensesStats(data){
+      const total = data.length;
+      const spent = data.reduce((s,r)=>s + (parseFloat(r.Amount||r.amount||0)||0),0);
+      statsDiv.innerHTML = `
+        <div class="stat"><strong>${total}</strong> expense entries</div>
+        <div class="stat"><strong>₹ ${spent.toFixed(2)}</strong> total expenses</div>
+      `;
+    }
+
+    function renderTopSummary(){
+      const selectedMonth = monthFilter.value;
+      // If no month selected filter or 'all', show provided summaryData
+      if(selectedMonth==='all'){
+        if(!summaryData || !summaryData.length){ topSummaryCard.style.display='none'; return; }
+        const items = summaryData
+          .filter(x=>x && x.Metric!=null && x.Value!=null)
+          .map(x=>({metric:String(x.Metric), value:Number(x.Value)}));
+        if(!items.length){ topSummaryCard.style.display='none'; return; }
+        topSummaryCard.style.display='';
+        topSummaryDiv.innerHTML = items.map(x=>`<div class="stat"><strong>${x.metric}</strong> <span>₹ ${x.value.toLocaleString(undefined,{maximumFractionDigits:2})}</span></div>`).join('');
+        return;
+      }
+      // Month-specific summary computed from current data
+      const monthCollected = rawData
+        .filter(r=>r && r.Month===selectedMonth)
+        .reduce((s,r)=> s + (parseFloat(r.Amount||0)||0), 0);
+      const monthExpenses = expensesData
+        .filter(e=>{
+          const m = e.__Month || getMonthNameFromDateValue(e.Date);
+          return (m||'').toLowerCase() === selectedMonth.toLowerCase();
+        })
+        .reduce((s,e)=> s + (parseFloat(e.Amount||e['Amount Spent']||0)||0), 0);
+      const monthItems = [
+        { metric: 'Total Collections', value: monthCollected },
+        { metric: 'Total Expenses', value: monthExpenses },
+        { metric: 'Net Balance', value: monthCollected - monthExpenses }
+      ];
+      topSummaryCard.style.display='';
+      topSummaryDiv.innerHTML = monthItems.map(x=>`<div class=\"stat\"><strong>${x.metric}</strong> <span>₹ ${x.value.toLocaleString(undefined,{maximumFractionDigits:2})}</span></div>`).join('');
+    }
+
+    function getCollectedBaseFiltered(){
+      const filter = filterPaidEl.value;
+      const q = (searchBox.value||'').trim().toLowerCase();
+      const selectedMonth = monthFilter.value;
+      return rawData.filter(row=>{
+        if(selectedMonth !== 'all' && row.Month && row.Month !== selectedMonth) return false;
+        if(filter==='paid' && !row.__paid) return false;
+        if(filter==='unpaid' && row.__paid) return false;
+        if(q){
+          const hay = Object.values(row).join(' ').toLowerCase();
+          if(!hay.includes(q)) return false;
+        }
+        return true;
+      });
+    }
+    function getCollectedDisplay(){
+      const baseFiltered = getCollectedBaseFiltered();
+      return baseFiltered.filter(row=>{
+        for(const key in columnFilters){
+          const val = (columnFilters[key]||'').toString().trim();
+          if(!val) continue;
+          if(key==='Paid'){
+            if(val==='paid' && !row.__paid) return false;
+            if(val==='unpaid' && row.__paid) return false;
+            continue;
+          }
+          const cell = row[key];
+          const cellStr = (cell==null? '' : String(cell));
+          if(cellStr !== val) return false;
+        }
+        return true;
+      });
+    }
+    function renderCollectedTable(){
+      const baseFiltered = getCollectedBaseFiltered();
+      const display = getCollectedDisplay();
+
+      renderCollectedStats(display);
+
+      if(display.length===0){ tableContainer.innerHTML = '<div class="small muted">No records to show</div>'; return; }
+
+      const cols = Object.keys(display[0]).filter(c=>!c.startsWith('__'));
+      const table = document.createElement('table');
+      const thead = document.createElement('thead');
+      const trh = document.createElement('tr');
+      cols.forEach(c=>{ const th = document.createElement('th'); th.textContent = c; trh.appendChild(th); });
+      // Actions header
+      const thAct = document.createElement('th'); thAct.textContent='Actions'; trh.appendChild(thAct);
+      thead.appendChild(trh);
+      // filters row with dropdowns populated from baseFiltered unique values
+      const trf = document.createElement('tr');
+      cols.forEach(c=>{
+        const th = document.createElement('th');
+        const sel=document.createElement('select');
+        if(c==='Paid'){
+          sel.innerHTML='<option value="">All</option><option value="paid">Paid</option><option value="unpaid">Unpaid</option>';
+        }else{
+          const seen = new Set();
+          const values = [];
+          baseFiltered.forEach(r=>{
+            const v = r[c];
+            const s = (v==null? '' : String(v));
+            if(s===''||seen.has(s)) return;
+            seen.add(s); values.push(s);
+          });
+          values.sort((a,b)=>a.localeCompare(b, undefined, {numeric:true, sensitivity:'base'}));
+          const opts = ['<option value="">All</option>'].concat(values.map(v=>'<option value="'+v.replace(/"/g,'&quot;')+'">'+v.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</option>'));
+          sel.innerHTML = opts.join('');
+        }
+        sel.value = (columnFilters[c]||'');
+        sel.addEventListener('change',()=>{ columnFilters[c]=sel.value; render(); });
+        th.appendChild(sel);
+        trf.appendChild(th);
+      });
+      // empty cell for Actions column
+      const thEmpty=document.createElement('th'); trf.appendChild(thEmpty);
+      thead.appendChild(trf);
+      table.appendChild(thead);
+
+      const tbody = document.createElement('tbody');
+      display.forEach((row,idx)=>{
+        const tr = document.createElement('tr');
+        cols.forEach(c=>{
+          const td = document.createElement('td');
+          td.textContent = row[c] == null ? '' : row[c];
+          tr.appendChild(td);
+        });
+        // Actions cell
+        const tdAct = document.createElement('td');
+        const toggle = document.createElement('span'); toggle.className='action-link'; toggle.textContent = row.__paid? 'Mark Unpaid' : 'Mark Paid';
+        toggle.onclick = async ()=>{
+          const pwd = prompt('Enter admin password');
+          if(pwd==null) return; // cancelled
+          if(pwd !== ADMIN_PASSWORD){ alert('Incorrect password'); return; }
+          try{
+            await applyPaidToggle(row, !row.__paid);
+          }catch(e){
+            alert('Failed to update: '+(e&&e.message? e.message : e));
+            return;
+          }
+          render();
+        };
+        tdAct.appendChild(toggle);
+        tr.appendChild(tdAct);
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      tableContainer.innerHTML='';
+      tableContainer.appendChild(table);
+    }
+
+    function getExpensesBaseFiltered(){
+      const q = (searchBox.value||'').trim().toLowerCase();
+      const selectedMonth = monthFilter.value;
+      return expensesData.filter(row=>{
+        if(selectedMonth !== 'all'){
+          const m = row.__Month || getMonthNameFromDateValue(row.Date);
+          if((m||'').toLowerCase() !== selectedMonth.toLowerCase()) return false;
+        }
+        if(q){
+          const hay = Object.values(row).join(' ').toLowerCase();
+          if(!hay.includes(q)) return false;
+        }
+        return true;
+      });
+    }
+    function getExpensesDisplay(){
+      const baseFiltered = getExpensesBaseFiltered();
+      return baseFiltered.filter(row=>{
+        for(const key in expensesColumnFilters){
+          const val = (expensesColumnFilters[key]||'').toString().trim();
+          if(!val) continue;
+          const cell = row[key];
+          const cellStr = (cell==null? '' : String(cell));
+          if(cellStr !== val) return false;
+        }
+        return true;
+      });
+    }
+    function renderExpensesTable(){
+      const baseFiltered = getExpensesBaseFiltered();
+      const display = getExpensesDisplay();
+
+      renderExpensesStats(display);
+
+      if(!display.length){ tableContainer.innerHTML = '<div class="small muted">No expenses to show</div>'; return; }
+
+      const cols = Object.keys(display[0]);
+      const table = document.createElement('table');
+      const thead = document.createElement('thead');
+      const trh = document.createElement('tr');
+      cols.forEach(c=>{ const th = document.createElement('th'); th.textContent = c; trh.appendChild(th); });
+      thead.appendChild(trh);
+      // filters row
+      const trf = document.createElement('tr');
+      cols.forEach(c=>{
+        const th = document.createElement('th');
+        const sel=document.createElement('select');
+        const seen = new Set();
+        const values = [];
+        baseFiltered.forEach(r=>{
+          const v = r[c];
+          const s = (v==null? '' : String(v));
+          if(s===''||seen.has(s)) return;
+          seen.add(s); values.push(s);
+        });
+        values.sort((a,b)=>a.localeCompare(b, undefined, {numeric:true, sensitivity:'base'}));
+        const opts = ['<option value="">All</option>'].concat(values.map(v=>'<option value="'+v.replace(/"/g,'&quot;')+'">'+v.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</option>'));
+        sel.innerHTML = opts.join('');
+        sel.value = (expensesColumnFilters[c]||'');
+        sel.addEventListener('change',()=>{ expensesColumnFilters[c]=sel.value; renderExpensesTable(); });
+        th.appendChild(sel);
+        trf.appendChild(th);
+      });
+      thead.appendChild(trf);
+      table.appendChild(thead);
+
+      const tbody = document.createElement('tbody');
+      display.forEach(row=>{
+        const tr = document.createElement('tr');
+        cols.forEach(c=>{ const td=document.createElement('td'); td.textContent = row[c]==null? '' : row[c]; tr.appendChild(td); });
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      tableContainer.innerHTML='';
+      tableContainer.appendChild(table);
+    }
+
+    function applyTabVisibility(){
+      // Show/hide controls based on tab
+      if(currentTab==='collected'){
+        filterPaidEl.style.display='';
+        monthFilter.style.display='';
+      }else{
+        filterPaidEl.style.display=''; // keep export/search buttons visible
+        monthFilter.style.display='none';
+      }
+    }
+
+    function render(){
+      applyTabVisibility();
+      renderFilterSummary();
+      renderTopSummary();
+      if(currentTab==='collected') return renderCollectedTable();
+      if(currentTab==='expenses') return renderExpensesTable();
+      // Future tabs
+      statsDiv.innerHTML = '<div class="stat">Future tab</div>';
+      tableContainer.innerHTML = '<div class="small muted">Coming soon</div>';
+    }
+
+    function buildRowsFromMaintenanceJson(json){
+      const rows = [];
+      const sectionNames = Object.keys(json||{});
+      sectionNames.forEach(section=>{
+        if(['Expenses','Summary'].includes(section)) return;
+        const list = Array.isArray(json[section]) ? json[section] : [];
+        list.forEach(item=>{
+          const ref = String(item['Reference/Transaction ID']||'');
+          if(ref.toLowerCase().includes('total collections')) return;
+          const amountNum = Number(item['Amount Received']||0) || 0;
+          const flatRaw = item['Flat Number'];
+          const flatVal = Number.isFinite(flatRaw) ? (Number.isInteger(flatRaw)? flatRaw : Math.trunc(flatRaw)) : (flatRaw||'');
+          const row = {
+            Month: section,
+            Name: item['Resident Name']||'',
+            Flat: flatVal,
+            Amount: amountNum,
+            Paid: amountNum>0 ? 'Paid' : '',
+            PaymentDate: formatDate(item['Date']||''),
+            'Payment Mode': item['Payment Mode']||'',
+            //'Reference/Transaction ID': ref,
+            Notes: item['Notes']||''
+          };
+          row.__paid = amountNum>0;
+          rows.push(row);
+        });
+      });
+      return rows;
+    }
+
+    function extractExpenses(json){
+      const list = Array.isArray(json && json['Expenses']) ? json['Expenses'] : [];
+      // Normalize Amount key and derive a Month label from Date
+      return list.map(x=>{
+        const r = Object.assign({}, x);
+        if(r.Amount==null && r['Amount']) r.Amount = r['Amount'];
+        r.__Month = getMonthNameFromDateValue(r.Date);
+        return r;
+      });
+    }
+
+    function normalizeRows(rows){
+      return rows.map(r=>{
+        const out = {};
+        const aliases = {name:['name','owner','resident'], flat:['flat','flatno','flat no','flat_number'], amount:['amount','maintenance','fees'], paid:['paid','status'], paymentdate:['paymentdate','date'], contact:['contact','phone','mobile']};
+        const lowerMap = {};
+        for(const k of Object.keys(r)) lowerMap[normalizeKey(k)] = k;
+        for(const target of ['Name','Flat','Amount','Paid','PaymentDate','Contact']){
+          let foundKey=null;
+          for(const alias of (aliases[target.toLowerCase()]||[])){
+            if(lowerMap[alias]){foundKey=lowerMap[alias];break;}
+          }
+          if(!foundKey && lowerMap[target.toLowerCase()]) foundKey=lowerMap[target.toLowerCase()];
+          if(foundKey) out[target]=r[foundKey];
+        }
+        for(const k of Object.keys(r)){
+          if(['name','flat','amount','paid','paymentdate','contact'].includes(normalizeKey(k))) continue;
+          out[k]=r[k];
+        }
+        out.__paid = toBooleanPaid(out.Paid);
+        if(out.Amount) out.Amount=out.Amount.toString().replace(/[₹, ]/g,'');
+        if(out.PaymentDate) out.PaymentDate = formatDate(out.PaymentDate);
+        return out;
+      });
+    }
+
+    function renderFilterSummary(){
+      const badges = [];
+      const search = (searchBox.value||'').trim();
+      if(search){ badges.push(`<span class="badge">Search: ${escapeHtml(search)}</span>`); }
+      if(currentTab==='collected'){
+        if(monthFilter.value && monthFilter.value!=='all') badges.push(`<span class="badge">Month: ${escapeHtml(monthFilter.value)}</span>`);
+        if(filterPaidEl.value==='paid') badges.push('<span class="badge">Paid</span>');
+        if(filterPaidEl.value==='unpaid') badges.push('<span class="badge">Unpaid</span>');
+        for(const k in columnFilters){
+          const v = columnFilters[k]; if(v) badges.push(`<span class="badge">${escapeHtml(k)}: ${escapeHtml(String(v))}</span>`);
+        }
+      }else if(currentTab==='expenses'){
+        for(const k in expensesColumnFilters){
+          const v = expensesColumnFilters[k]; if(v) badges.push(`<span class="badge">${escapeHtml(k)}: ${escapeHtml(String(v))}</span>`);
+        }
+      }
+      filterSummary.innerHTML = badges.length? badges.join(' ') : 'No filters applied';
+    }
+
+    function escapeHtml(s){
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function getCurrentDisplay(){
+      if(currentTab==='expenses') return getExpensesDisplay();
+      // default collected
+      return getCollectedDisplay();
+    }
+
+    // Export CSV (current tab & filters)
+    exportCsvBtn.addEventListener('click',()=>{
+      const rows = getCurrentDisplay();
+      if(!rows.length) return alert('No data');
+      const cols=Object.keys(rows[0]).filter(c=>!c.startsWith('__'));
+      const lines=[cols.join(',')];
+      rows.forEach(r=>{lines.push(cols.map(c=>escapeCsv(r[c]||'')).join(','));});
+      const blob=new Blob([lines.join('\n')],{type:'text/csv'});
+      const url=URL.createObjectURL(blob);
+      const filename = currentTab==='expenses' ? 'expenses_export.csv' : 'maintenance_export.csv';
+      downloadUrl(url, filename);
+      URL.revokeObjectURL(url);
+    });
+    function escapeCsv(v){if(v==null) return ''; const s=String(v).replace(/"/g,'""'); if(s.includes(',')||s.includes('"')||s.includes('\n')) return '"'+s+'"'; return s;}
+
+    // Export Excel (current tab & filters)
+    exportExcelBtn.addEventListener('click',()=>{
+      const rows = getCurrentDisplay();
+      if(!rows.length) return alert('No data');
+      const outRows=rows.map(r=>{const o={}; for(const k of Object.keys(r)) if(!k.startsWith('__')) o[k]=r[k]; return o;});
+      const ws=XLSX.utils.json_to_sheet(outRows);
+      const wb=XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb,ws, currentTab==='expenses' ? 'Expenses' : 'Maintenance');
+      const wbout=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+      const blob=new Blob([wbout],{type:'application/octet-stream'});
+      const url=URL.createObjectURL(blob);
+      const filename = currentTab==='expenses' ? 'expenses_export.xlsx' : 'maintenance_export.xlsx';
+      downloadUrl(url, filename);
+      URL.revokeObjectURL(url);
+    });
+    function downloadUrl(url,filename){const a=document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove();}
+
+    // Fetch JSON directly from Azure Blob Storage
+    async function loadFromAzure(){
+      try{
+        const res = await fetch(READ_JSON_URL);
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        const json = await res.json();
+        if(Array.isArray(json)){
+          rawData = normalizeRows(json);
+          expensesData = [];
+          summaryData = [];
+        }else{
+          rawData = buildRowsFromMaintenanceJson(json);
+          expensesData = extractExpenses(json);
+          summaryData = Array.isArray(json && json['Summary']) ? json['Summary'] : [];
+        }
+        if(!rawData || !rawData.length) throw new Error('No records found');
+        populateMonthFilter();
+        renderTopSummary();
+        render();
+      }catch(err){
+        tableContainer.innerHTML = '<div class="small muted">Error loading data: '+err.message+'</div>';
+      }
+    }
+
+    // Optional config via inline <script id="app-config" type="application/json"> or config.json (http/https only)
+    async function loadConfig(){
+      try{
+        // Inline JSON config support (works with file://)
+        const inline = document.getElementById('app-config');
+        if(inline && inline.textContent){
+          try{
+            const cfg = JSON.parse(inline.textContent);
+            if(cfg && typeof cfg.adminPassword === 'string' && cfg.adminPassword.trim().length){ ADMIN_PASSWORD = cfg.adminPassword; }
+            if(cfg && typeof cfg.updateEndpoint === 'string' && cfg.updateEndpoint.trim().length){ UPDATE_ENDPOINT = cfg.updateEndpoint; }
+            if(cfg && typeof cfg.updateBlobSasUrl === 'string' && cfg.updateBlobSasUrl.trim().length){ UPDATE_BLOB_SAS_URL = cfg.updateBlobSasUrl; }
+          }catch(_){}
+        }
+        // Skip network fetch on file:// to avoid CORS noise
+        if(location && location.protocol === 'file:') return;
+        const res = await fetch('config.json');
+        if(!res.ok) return;
+        const cfg = await res.json();
+        if(cfg && typeof cfg.adminPassword === 'string' && cfg.adminPassword.trim().length){ ADMIN_PASSWORD = cfg.adminPassword; }
+        if(cfg && typeof cfg.updateEndpoint === 'string' && cfg.updateEndpoint.trim().length){ UPDATE_ENDPOINT = cfg.updateEndpoint; }
+        if(cfg && typeof cfg.updateBlobSasUrl === 'string' && cfg.updateBlobSasUrl.trim().length){ UPDATE_BLOB_SAS_URL = cfg.updateBlobSasUrl; }
+      }catch(e){ /* ignore */ }
+    }
+
+    async function sendUpdateToBackend(row){
+      if(!UPDATE_ENDPOINT) return; // no backend configured
+      const payload = {
+        action: row.__paid ? 'mark_paid' : 'mark_unpaid',
+        row: row
+      };
+      await fetch(UPDATE_ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    }
+
+    function todayIso(){ const d=new Date(); const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0'); const da=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${da}`; }
+
+    async function applyPaidToggle(row, makePaid){
+      // update local row first
+      row.__paid = !!makePaid;
+      row.Paid = row.__paid ? 'Paid' : '';
+      row.PaymentDate = row.__paid ? formatDate(new Date()) : '';
+      if(row.__paid){ row.Amount = 2000; }
+      // Backend webhook
+      if(UPDATE_ENDPOINT){
+        await sendUpdateToBackend(row);
+        return;
+      }
+      // Direct blob update if SAS URL provided
+      if(!UPDATE_BLOB_SAS_URL) return;
+      const res = await fetch(READ_JSON_URL, {cache:'no-store'});
+      if(!res.ok) throw new Error('Unable to fetch current JSON: HTTP '+res.status);
+      const json = await res.json();
+      const month = row.Month;
+      if(!json || !json[month] || !Array.isArray(json[month])) throw new Error('Month not found in JSON');
+      const sheet = json[month];
+      const idx = sheet.findIndex(item=>{
+        const flat = item['Flat Number'];
+        const name = (item['Resident Name']||'').toString().trim().toLowerCase();
+        const rName = (row.Name||'').toString().trim().toLowerCase();
+        const flatStr = (flat==null? '' : String(Math.trunc(Number(flat)||flat)));
+        const rowFlatStr = (row.Flat==null? '' : String(Math.trunc(Number(row.Flat)||row.Flat)));
+        const flatMatch = flatStr === rowFlatStr;
+        const nameMatch = !rName || !name ? flatMatch : (flatMatch && name===rName);
+        return nameMatch;
+      });
+      if(idx===-1) throw new Error('Matching record not found in JSON');
+      if(makePaid){
+        sheet[idx]['Amount Received'] = 2000;
+        sheet[idx]['Date'] = todayIso();
+      }else{
+        sheet[idx]['Amount Received'] = 0;
+        sheet[idx]['Date'] = '';
+      }
+      const putRes = await fetch(UPDATE_BLOB_SAS_URL, { method:'PUT', headers:{'x-ms-blob-type':'BlockBlob','Content-Type':'application/json'}, body: JSON.stringify(json) });
+      if(!putRes.ok) throw new Error('Blob update failed: HTTP '+putRes.status);
+    }
+
+    function populateMonthFilter(){
+      if(!monthFilter) return;
+      const seen = new Set();
+      const options = ['<option value="all">All Months</option>'];
+      rawData.forEach(r=>{
+        if(r.Month && !seen.has(r.Month)){
+          seen.add(r.Month);
+          options.push('<option value="'+r.Month+'">'+r.Month+'</option>');
+        }
+      });
+      monthFilter.innerHTML = options.join('');
+    }
+
+    filterPaidEl.addEventListener('change', render);
+    monthFilter.addEventListener('change', render);
+    searchBox.addEventListener('input', debounce(render,300));
+    tabCollectedBtn.addEventListener('click',()=>{ currentTab='collected'; columnFilters={}; tabCollectedBtn.classList.remove('ghost'); tabExpensesBtn.classList.add('ghost'); render(); });
+    tabExpensesBtn.addEventListener('click',()=>{ currentTab='expenses'; expensesColumnFilters={}; tabExpensesBtn.classList.remove('ghost'); tabCollectedBtn.classList.add('ghost'); render(); });
+    tabFuture1Btn.addEventListener('click',()=>{ currentTab='future1'; tabExpensesBtn.classList.add('ghost'); tabCollectedBtn.classList.add('ghost'); render(); });
+    tabFuture2Btn.addEventListener('click',()=>{ currentTab='future2'; tabExpensesBtn.classList.add('ghost'); tabCollectedBtn.classList.add('ghost'); render(); });
+    function debounce(fn,wait){let t;return function(...a){clearTimeout(t);t=setTimeout(()=>fn(...a),wait);};}
+
+    // Clear all filters (common button)
+    clearFiltersBtn.addEventListener('click',()=>{
+      searchBox.value='';
+      filterPaidEl.value='all';
+      monthFilter.value='all';
+      columnFilters={};
+      expensesColumnFilters={};
+      render();
+    });
+
+    // Load on page ready
+    (async()=>{ await loadConfig(); await loadFromAzure(); })();
+
+  </script>
+</body>
+</html>
