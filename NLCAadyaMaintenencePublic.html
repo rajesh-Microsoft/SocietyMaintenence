@@ -56,6 +56,8 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
       <select id="monthFilter"><option value="all">All Months</option></select>
     </div>
     <div class="stats" id="topSummary"></div>
+    <div class="stats" id="stats"></div>
+    <div class="small muted" id="filterSummary"></div>
   </div>
 
   <div class="card">
@@ -72,14 +74,12 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
       <button id="exportExcel">Export Excel</button>
       <button id="exportCsv" class="ghost">Export CSV</button>
       <button id="clearFilters" class="ghost">Clear Filters</button>
-      <select id="filterPaid"><option value="all">All</option><option value="paid">Paid</option><option value="unpaid">Unpaid</option></select>
+      <select id="filterPaid"><option value="all">Paid/Unpaid</option><option value="paid">Paid</option><option value="unpaid">Unpaid</option></select>
       <input id="searchBox" class="search" type="text" placeholder="Search name/flat/contact..." />
     </div>
   </div>
 
   <div class="card">
-    <div class="stats" id="stats"></div>
-    <div class="small muted" id="filterSummary"></div>
   </div>
 
   <div class="card table-wrap">
@@ -173,7 +173,6 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
         <div class="stat"><strong>${total}</strong> total</div>
         <div class="stat"><strong>${paid}</strong> paid</div>
         <div class="stat"><strong>${unpaid}</strong> unpaid</div>
-        <div class="stat"><strong>₹ ${collected.toFixed(2)}</strong> collected</div>
       `;
     }
 
@@ -181,8 +180,7 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
       const total = data.length;
       const spent = data.reduce((s,r)=>s + (parseFloat(r.Amount||r.amount||0)||0),0);
       statsDiv.innerHTML = `
-        <div class="stat"><strong>${total}</strong> expense entries</div>
-        <div class="stat"><strong>₹ ${spent.toFixed(2)}</strong> total expenses</div>
+        
       `;
     }
 
@@ -413,7 +411,7 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
         monthFilter.style.display='';
       }else{
         filterPaidEl.style.display=''; // keep export/search buttons visible
-        monthFilter.style.display='none';
+        monthFilter.style.display='';
       }
     }
 
