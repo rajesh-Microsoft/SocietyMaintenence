@@ -51,7 +51,10 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
   </div>
 
   <div class="card" id="topSummaryCard" style="display:none">
-    <h1>Summary</h1>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px">
+      <h1 style="margin:0">Summary</h1>
+      <div class="small muted" id="lastUpdated"></div>
+    </div>
     <div class="controls" style="margin: 8px 0 12px 0">
       <select id="monthFilter"><option value="all">All Months</option></select>
     </div>
@@ -558,6 +561,12 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
       try{
         const res = await fetch(READ_JSON_URL);
         if(!res.ok) throw new Error('HTTP '+res.status);
+        const lm = res.headers && res.headers.get ? res.headers.get('Last-Modified') : null;
+        if(lm){
+          const lmDate = new Date(lm);
+          const lastUpdatedEl = document.getElementById('lastUpdated');
+          if(lastUpdatedEl && !isNaN(lmDate)) lastUpdatedEl.textContent = 'Last updated: ' + lmDate.toLocaleString();
+        }
         const json = await res.json();
         if(Array.isArray(json)){
           rawData = normalizeRows(json);
