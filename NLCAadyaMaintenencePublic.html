@@ -24,6 +24,12 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
     button:hover{filter:brightness(0.98)}
     button:active{transform:translateY(1px)}
     button.ghost{background:var(--primary-weak);color:var(--primary)}
+    .tabs{display:flex;border-bottom:2px solid var(--border);margin-bottom:16px}
+    .tab{flex:1;padding:12px 16px;background:transparent;border:0;border-bottom:3px solid transparent;color:var(--muted);cursor:pointer;font-weight:500;transition:all 0.2s ease}
+    .tab:hover{color:var(--text);background:var(--primary-weak)}
+    .tab.active{color:var(--primary);border-bottom-color:var(--primary);background:var(--primary-weak)}
+    .tab-content{display:none}
+    .tab-content.active{display:block}
     table{width:100%;border-collapse:separate;border-spacing:0;margin-top:12px}
     table.table{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#fff}
     th,td{padding:12px 12px;border-bottom:1px solid #eef2f6;text-align:left;vertical-align:middle}
@@ -45,6 +51,10 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
     .eye:hover{filter:brightness(0.97)}
     .eye.active{background:var(--primary);color:#fff}
     .divider{height:1px;background:#eef2f6;margin:8px 0}
+    @media (max-width: 1024px){
+      .chart-grid{grid-template-columns: 1fr 1fr !important; gap: 10px !important}
+      .chart-grid .card:nth-child(3){grid-column: 1 / -1; margin-top: 10px}
+    }
     @media (max-width: 720px){
       body{padding:12px}
       h1{font-size:18px}
@@ -53,6 +63,10 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
       .table-wrap{max-height:none}
       th,td{padding:8px;font-size:14px}
       .stat{width:100%;justify-content:space-between}
+      .chart-grid{grid-template-columns: 1fr !important; gap: 8px !important}
+      .chart-grid .card{padding: 8px !important}
+      .chart-grid h3{font-size: 12px !important; margin-bottom: 6px !important}
+      .chart-grid div[style*="height"]{height: 120px !important}
     }
   </style>
 </head>
@@ -65,56 +79,90 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
     </div>
   </div>
   <div class="banner">
-    <strong>Reminder:</strong> Please pay your maintenance before 10th of every month via UPI <strong>7697806560icici@ybl</strong>.
+    <strong>💡 Reminder:</strong> Please pay your maintenance before 10th of every month via UPI <strong>7697806560icici@ybl</strong>.
   </div>
   <div class="card">
-    <h1>NLC Aadya Society Maintenance Tracker</h1>
-    <div class="small muted">This app pulls maintenance data directly from Azure Blob Storage JSON file and displays, filters, and exports the status.</div>
+    <h1>🏢 NLC Aadya Society Maintenance Tracker</h1>
+    <div class="small muted">📊 This app pulls maintenance data directly from Azure Blob Storage JSON file and displays, filters, and exports the status.</div>
   </div>
 
   <div class="card" id="topSummaryCard" style="display:none">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px">
-      <h1 style="margin:0">Summary</h1>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px">
+      <h1 style="margin:0">📈 Summary</h1>
       <div class="small muted" id="lastUpdated"></div>
     </div>
     <div class="controls" style="margin: 8px 0 12px 0">
-      <select id="monthFilter"><option value="all">All Months</option></select>
+      <select id="monthFilter"><option value="all">📅 All Months</option></select>
+      <button id="clearFiltersSummary" class="ghost">🗑️ Clear Filters</button>
     </div>
     <div class="stats" id="topSummary"></div>
     <div class="stats" id="stats"></div>
     <div class="small muted" id="filterSummary"></div>
+    
+    <!-- Charts Section -->
+    <div style="margin-top: 16px;">
+      <div class="chart-grid" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+        <div class="card" style="margin-bottom: 0; padding: 12px;">
+          <h3 style="margin: 0 0 8px 0; font-size: 14px; color: var(--text);">📊 Payment Status</h3>
+          <div style="height: 150px; position: relative;">
+            <canvas id="paymentStatusChart"></canvas>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom: 0; padding: 12px;">
+          <h3 style="margin: 0 0 8px 0; font-size: 14px; color: var(--text);">📈 Monthly Collections</h3>
+          <div style="height: 150px; position: relative;">
+            <canvas id="monthlyChart"></canvas>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom: 0; padding: 12px;">
+          <h3 style="margin: 0 0 8px 0; font-size: 14px; color: var(--text);">💸 Expenses vs Collections</h3>
+          <div style="height: 150px; position: relative;">
+            <canvas id="expensesChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="card">
-    <div class="controls">
-      <button id="tabCollected">Collected</button>
-      <button id="tabExpenses" class="ghost">Expenses</button>
-      <button id="tabFuture1" class="ghost">Future 1</button>
-      <button id="tabFuture2" class="ghost">Future 2</button>
+    <div class="tabs">
+      <button id="tabCollected" class="tab active">💰 Collected</button>
+      <button id="tabExpenses" class="tab">💸 Expenses</button>
+      <button id="tabFuture1" class="tab">🔮 Future 1</button>
+      <button id="tabFuture2" class="tab">🚀 Future 2</button>
     </div>
   </div>
 
   <div class="card">
     <div class="controls">
-      <button id="exportExcel">Export Excel</button>
-      <button id="exportCsv" class="ghost">Export CSV</button>
-      <button id="clearFilters" class="ghost">Clear Filters</button>
-      <input id="searchBox" class="search" type="text" placeholder="Search name/flat/contact..." />
+      <button id="exportExcel">📊 Export Excel</button>
+      <button id="exportCsv" class="ghost">📄 Export CSV</button>
+      <input id="searchBox" class="search" type="text" placeholder="🔍 Search name/flat/contact..." />
     </div>
   </div>
 
-  <div class="card">
-  </div>
 
   <div class="card table-wrap">
-    <div id="tableContainer"></div>
+    <div id="collectedContent" class="tab-content active">
+      <div id="tableContainer"></div>
+    </div>
+    <div id="expensesContent" class="tab-content">
+      <div id="expensesTableContainer"></div>
+    </div>
+    <div id="future1Content" class="tab-content">
+      <div class="small muted">🔮 Future 1 functionality coming soon...</div>
+    </div>
+    <div id="future2Content" class="tab-content">
+      <div class="small muted">🚀 Future 2 functionality coming soon...</div>
+    </div>
   </div>
 
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
     const exportExcelBtn = document.getElementById('exportExcel');
     const exportCsvBtn = document.getElementById('exportCsv');
-    const clearFiltersBtn = document.getElementById('clearFilters');
+    const clearFiltersSummaryBtn = document.getElementById('clearFiltersSummary');
     const searchBox = document.getElementById('searchBox');
     const statsDiv = document.getElementById('stats');
     const tableContainer = document.getElementById('tableContainer');
@@ -138,8 +186,248 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
     let UPDATE_BLOB_SAS_URL = null; // optional SAS URL with write perms to maintenance_data.json
     const READ_JSON_URL = "https://societymantaintracker.blob.core.windows.net/files/maintenance_data.json";
     let summaryData = [];
+    let charts = {
+      paymentStatus: null,
+      monthly: null,
+      expenses: null
+    };
 
     function normalizeKey(k){return (k||'').toString().trim().toLowerCase();}
+    
+    function getColumnIcon(columnName){
+      const iconMap = {
+        'Month': '📅',
+        'Name': '👤',
+        'Flat': '🏠',
+        'Amount': '💰',
+        'Paid': '✅',
+        'PaymentDate': '📆',
+        'Payment Mode': '💳',
+        'Reference/Transaction ID': '🔗',
+        'Notes': '📝',
+        'Date': '📆',
+        'Description': '📄',
+        'Category': '📂',
+        'Amount Spent': '💸',
+        'Actions': '⚙️'
+      };
+      return iconMap[columnName] || '';
+    }
+
+    function renderCharts() {
+      renderPaymentStatusChart();
+      renderMonthlyChart();
+      renderExpensesChart();
+    }
+
+    function renderPaymentStatusChart() {
+      const ctx = document.getElementById('paymentStatusChart');
+      if (!ctx) return;
+
+      // Destroy existing chart
+      if (charts.paymentStatus) {
+        charts.paymentStatus.destroy();
+      }
+
+      const data = getCollectedBaseFiltered();
+      const paid = data.filter(r => r.__paid).length;
+      const unpaid = data.filter(r => !r.__paid).length;
+
+      charts.paymentStatus = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Paid', 'Unpaid'],
+          datasets: [{
+            data: [paid, unpaid],
+            backgroundColor: ['#22c55e', '#ef4444'],
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                padding: 8,
+                usePointStyle: true,
+                font: {
+                  size: 11
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderMonthlyChart() {
+      const ctx = document.getElementById('monthlyChart');
+      if (!ctx) return;
+
+      // Destroy existing chart
+      if (charts.monthly) {
+        charts.monthly.destroy();
+      }
+
+      const monthData = {};
+      rawData.forEach(row => {
+        if (row.Month && row.Amount) {
+          if (!monthData[row.Month]) {
+            monthData[row.Month] = 0;
+          }
+          monthData[row.Month] += parseFloat(row.Amount) || 0;
+        }
+      });
+
+      const months = Object.keys(monthData).sort();
+      const amounts = months.map(month => monthData[month]);
+
+      charts.monthly = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: months,
+          datasets: [{
+            label: 'Collections (₹)',
+            data: amounts,
+            backgroundColor: '#3b82f6',
+            borderColor: '#1d4ed8',
+            borderWidth: 1,
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                font: {
+                  size: 10
+                },
+                callback: function(value) {
+                  return '₹' + value.toLocaleString();
+                }
+              }
+            },
+            x: {
+              ticks: {
+                font: {
+                  size: 10
+                }
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            }
+          }
+        }
+      });
+    }
+
+    function renderExpensesChart() {
+      const ctx = document.getElementById('expensesChart');
+      if (!ctx) return;
+
+      // Destroy existing chart
+      if (charts.expenses) {
+        charts.expenses.destroy();
+      }
+
+      const monthData = {};
+      const expenseData = {};
+
+      // Process collections
+      rawData.forEach(row => {
+        if (row.Month && row.Amount) {
+          if (!monthData[row.Month]) {
+            monthData[row.Month] = 0;
+          }
+          monthData[row.Month] += parseFloat(row.Amount) || 0;
+        }
+      });
+
+      // Process expenses
+      expensesData.forEach(row => {
+        const month = row.__Month || getMonthNameFromDateValue(row.Date);
+        if (month) {
+          if (!expenseData[month]) {
+            expenseData[month] = 0;
+          }
+          expenseData[month] += parseFloat(row.Amount || row['Amount Spent'] || 0) || 0;
+        }
+      });
+
+      const allMonths = [...new Set([...Object.keys(monthData), ...Object.keys(expenseData)])].sort();
+      const collections = allMonths.map(month => monthData[month] || 0);
+      const expenses = allMonths.map(month => expenseData[month] || 0);
+
+      charts.expenses = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: allMonths,
+          datasets: [
+            {
+              label: 'Collections',
+              data: collections,
+              borderColor: '#22c55e',
+              backgroundColor: 'rgba(34, 197, 94, 0.1)',
+              tension: 0.4,
+              fill: true
+            },
+            {
+              label: 'Expenses',
+              data: expenses,
+              borderColor: '#ef4444',
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              tension: 0.4,
+              fill: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                font: {
+                  size: 10
+                },
+                callback: function(value) {
+                  return '₹' + value.toLocaleString();
+                }
+              }
+            },
+            x: {
+              ticks: {
+                font: {
+                  size: 10
+                }
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                usePointStyle: true,
+                padding: 8,
+                font: {
+                  size: 11
+                }
+              }
+            }
+          }
+        }
+      });
+    }
     function toBooleanPaid(val){
       if(val===true) return true;
       if(val===false) return false;
@@ -194,9 +482,9 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
       const unpaid = total - paid;
       const collected = data.reduce((s,r)=>s + (parseFloat(r.Amount||0)||0),0);
       statsDiv.innerHTML = `
-        <div class="stat"><strong>${total}</strong> total</div>
-        <div class="stat"><strong>${paid}</strong> paid <span id="paidEye" class="eye${paidView==='paid'?' active':''}" title="View paid">👁</span></div>
-        <div class="stat"><strong>${unpaid}</strong> unpaid <span id="unpaidEye" class="eye${paidView==='unpaid'?' active':''}" title="View unpaid">👁</span></div>
+        <div class="stat">📊 <strong>${total}</strong> total</div>
+        <div class="stat">✅ <strong>${paid}</strong> paid <span id="paidEye" class="eye${paidView==='paid'?' active':''}" title="View paid">👁</span></div>
+        <div class="stat">❌ <strong>${unpaid}</strong> unpaid <span id="unpaidEye" class="eye${paidView==='unpaid'?' active':''}" title="View unpaid">👁</span></div>
       `;
       const paidEye = document.getElementById('paidEye');
       const unpaidEye = document.getElementById('unpaidEye');
@@ -283,7 +571,7 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
 
       renderCollectedStats(display);
 
-      if(display.length===0){ tableContainer.innerHTML = '<div class="small muted">No records to show</div>'; return; }
+      if(display.length===0){ tableContainer.innerHTML = '<div class="small muted">📋 No records to show</div>'; return; }
 
       const cols = Object.keys(display[0]).filter(c=>!c.startsWith('__'));
       const table = document.createElement('table');
@@ -291,9 +579,17 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
       table.className = 'table';
       const thead = document.createElement('thead');
       const trh = document.createElement('tr');
-      cols.forEach(c=>{ const th = document.createElement('th'); th.textContent = c; trh.appendChild(th); });
+      cols.forEach(c=>{ 
+        const th = document.createElement('th'); 
+        const icon = getColumnIcon(c);
+        th.innerHTML = icon ? `${icon} ${c}` : c; 
+        trh.appendChild(th); 
+      });
       // Actions header
-      const thAct = document.createElement('th'); thAct.textContent='Actions'; trh.appendChild(thAct);
+      const thAct = document.createElement('th'); 
+      const actionsIcon = getColumnIcon('Actions');
+      thAct.innerHTML = actionsIcon ? `${actionsIcon} Actions` : 'Actions'; 
+      trh.appendChild(thAct);
       thead.appendChild(trh);
       // filters row with dropdowns populated from baseFiltered unique values
       const trf = document.createElement('tr');
@@ -340,7 +636,7 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
         });
         // Actions cell
         const tdAct = document.createElement('td');
-        const toggle = document.createElement('span'); toggle.className='action-link'; toggle.textContent = row.__paid? 'Mark Unpaid' : 'Mark Paid';
+        const toggle = document.createElement('span'); toggle.className='action-link'; toggle.textContent = row.__paid? '❌ Mark Unpaid' : '✅ Mark Paid';
         toggle.onclick = async ()=>{
           const pwd = prompt('Enter admin password');
           if(pwd==null) return; // cancelled
@@ -396,13 +692,19 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
 
       renderExpensesStats(display);
 
-      if(!display.length){ tableContainer.innerHTML = '<div class="small muted">No expenses to show</div>'; return; }
+      const expensesContainer = document.getElementById('expensesTableContainer');
+      if(!display.length){ expensesContainer.innerHTML = '<div class="small muted">💸 No expenses to show</div>'; return; }
 
       const cols = Object.keys(display[0]);
       const table = document.createElement('table');
       const thead = document.createElement('thead');
       const trh = document.createElement('tr');
-      cols.forEach(c=>{ const th = document.createElement('th'); th.textContent = c; trh.appendChild(th); });
+      cols.forEach(c=>{ 
+        const th = document.createElement('th'); 
+        const icon = getColumnIcon(c);
+        th.innerHTML = icon ? `${icon} ${c}` : c; 
+        trh.appendChild(th); 
+      });
       thead.appendChild(trh);
       // filters row
       const trf = document.createElement('tr');
@@ -435,8 +737,8 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
         tbody.appendChild(tr);
       });
       table.appendChild(tbody);
-      tableContainer.innerHTML='';
-      tableContainer.appendChild(table);
+      expensesContainer.innerHTML='';
+      expensesContainer.appendChild(table);
     }
 
     function applyTabVisibility(){
@@ -452,11 +754,12 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
       applyTabVisibility();
       renderFilterSummary();
       renderTopSummary();
+      renderCharts();
       if(currentTab==='collected') return renderCollectedTable();
       if(currentTab==='expenses') return renderExpensesTable();
       // Future tabs
-      statsDiv.innerHTML = '<div class="stat">Future tab</div>';
-      tableContainer.innerHTML = '<div class="small muted">Coming soon</div>';
+      statsDiv.innerHTML = '<div class="stat">🔮 Future tab</div>';
+      tableContainer.innerHTML = '<div class="small muted">🚧 Coming soon</div>';
     }
 
     function buildRowsFromMaintenanceJson(json){
@@ -528,11 +831,11 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
     function renderFilterSummary(){
       const badges = [];
       const search = (searchBox.value||'').trim();
-      if(search){ badges.push(`<span class="badge">Search: ${escapeHtml(search)}</span>`); }
+      if(search){ badges.push(`<span class="badge">🔍 Search: ${escapeHtml(search)}</span>`); }
       if(currentTab==='collected'){
-        if(monthFilter.value && monthFilter.value!=='all') badges.push(`<span class="badge">Month: ${escapeHtml(monthFilter.value)}</span>`);
-        if(paidView==='paid') badges.push('<span class="badge">Paid</span>');
-        if(paidView==='unpaid') badges.push('<span class="badge">Unpaid</span>');
+        if(monthFilter.value && monthFilter.value!=='all') badges.push(`<span class="badge">📅 Month: ${escapeHtml(monthFilter.value)}</span>`);
+        if(paidView==='paid') badges.push('<span class="badge">✅ Paid</span>');
+        if(paidView==='unpaid') badges.push('<span class="badge">❌ Unpaid</span>');
         for(const k in columnFilters){
           const v = columnFilters[k]; if(v) badges.push(`<span class="badge">${escapeHtml(k)}: ${escapeHtml(String(v))}</span>`);
         }
@@ -541,7 +844,7 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
           const v = expensesColumnFilters[k]; if(v) badges.push(`<span class="badge">${escapeHtml(k)}: ${escapeHtml(String(v))}</span>`);
         }
       }
-      filterSummary.innerHTML = badges.length? badges.join(' ') : 'No filters applied';
+      filterSummary.innerHTML = badges.length? badges.join(' ') : '🎯 No filters applied';
     }
 
     function escapeHtml(s){
@@ -707,14 +1010,44 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
 
     monthFilter.addEventListener('change', render);
     searchBox.addEventListener('input', debounce(render,300));
-    tabCollectedBtn.addEventListener('click',()=>{ currentTab='collected'; columnFilters={}; tabCollectedBtn.classList.remove('ghost'); tabExpensesBtn.classList.add('ghost'); render(); });
-    tabExpensesBtn.addEventListener('click',()=>{ currentTab='expenses'; expensesColumnFilters={}; tabExpensesBtn.classList.remove('ghost'); tabCollectedBtn.classList.add('ghost'); render(); });
-    tabFuture1Btn.addEventListener('click',()=>{ currentTab='future1'; tabExpensesBtn.classList.add('ghost'); tabCollectedBtn.classList.add('ghost'); render(); });
-    tabFuture2Btn.addEventListener('click',()=>{ currentTab='future2'; tabExpensesBtn.classList.add('ghost'); tabCollectedBtn.classList.add('ghost'); render(); });
+    tabCollectedBtn.addEventListener('click',()=>{ 
+      currentTab='collected'; 
+      columnFilters={}; 
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+      tabCollectedBtn.classList.add('active');
+      document.getElementById('collectedContent').classList.add('active');
+      render(); 
+    });
+    tabExpensesBtn.addEventListener('click',()=>{ 
+      currentTab='expenses'; 
+      expensesColumnFilters={}; 
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+      tabExpensesBtn.classList.add('active');
+      document.getElementById('expensesContent').classList.add('active');
+      render(); 
+    });
+    tabFuture1Btn.addEventListener('click',()=>{ 
+      currentTab='future1'; 
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+      tabFuture1Btn.classList.add('active');
+      document.getElementById('future1Content').classList.add('active');
+      render(); 
+    });
+    tabFuture2Btn.addEventListener('click',()=>{ 
+      currentTab='future2'; 
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+      tabFuture2Btn.classList.add('active');
+      document.getElementById('future2Content').classList.add('active');
+      render(); 
+    });
     function debounce(fn,wait){let t;return function(...a){clearTimeout(t);t=setTimeout(()=>fn(...a),wait);};}
 
-    // Clear all filters (common button)
-    clearFiltersBtn.addEventListener('click',()=>{
+    // Clear all filters (summary section button)
+    clearFiltersSummaryBtn.addEventListener('click',()=>{
       searchBox.value='';
       paidView='all';
       monthFilter.value='all';
