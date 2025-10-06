@@ -8,30 +8,52 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Society Maintenance Tracker</title>
   <style>
-    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial;margin:0;padding:16px;background:#f5f7fb;color:#0f172a}
+    :root{--bg:#f6f8fc;--card:#ffffff;--text:#0f172a;--muted:#6b7280;--primary:#0b63e6;--primary-weak:#eef2ff;--border:#e5e7eb;--shadow:0 8px 24px rgba(15,23,42,0.06);--radius:12px}
+    *{box-sizing:border-box}
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial;margin:0;padding:16px;background:var(--bg);color:var(--text);line-height:1.45}
     .ticker{position:relative;overflow:hidden;background:#fffbe6;border:1px solid #fde68a;color:#92400e;border-radius:8px;margin:0 0 12px 0}
     .ticker__track{white-space:nowrap;display:flex;gap:48px;padding:8px 12px;animation:tickerMove 25s linear infinite}
     @keyframes tickerMove{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-    .banner{background:#fff7ed;color:#7c2d12;border:1px solid #fed7aa;border-radius:8px;padding:10px 12px;margin:0 0 12px 0;box-shadow:0 2px 8px rgba(15,23,42,0.04)}
-    .card{background:#fff;border-radius:8px;box-shadow:0 6px 18px rgba(15,23,42,0.06);padding:16px;margin-bottom:16px}
+    .banner{background:#fff7ed;color:#7c2d12;border:1px solid #fed7aa;border-radius:10px;padding:10px 12px;margin:0 0 12px 0;box-shadow:0 2px 8px rgba(15,23,42,0.04)}
+    .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:16px}
     h1{margin:0 0 8px 0;font-size:20px}
-    .controls{display:flex;gap:8px;flex-wrap:wrap}
-    input[type=text], select{padding:8px;border-radius:6px;border:1px solid #d1d5db}
-    button{padding:8px 12px;border-radius:6px;border:0;background:#0b63e6;color:#fff;cursor:pointer}
-    button.ghost{background:#eef2ff;color:#0b63e6}
-    table{width:100%;border-collapse:collapse;margin-top:12px}
-    th,td{padding:8px;border-bottom:1px solid #eef2f6;text-align:left}
-    th{background:#fbfdff;position:sticky;top:0}
-    .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px}
+    .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    input[type=text], select{padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:#fff}
+    input[type=text]:focus, select:focus{outline:2px solid rgba(11,99,230,0.2)}
+    button{padding:10px 14px;border-radius:10px;border:0;background:var(--primary);color:#fff;cursor:pointer;box-shadow:0 2px 6px rgba(11,99,230,0.2)}
+    button:hover{filter:brightness(0.98)}
+    button:active{transform:translateY(1px)}
+    button.ghost{background:var(--primary-weak);color:var(--primary)}
+    table{width:100%;border-collapse:separate;border-spacing:0;margin-top:12px}
+    table.table{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#fff}
+    th,td{padding:12px 12px;border-bottom:1px solid #eef2f6;text-align:left;vertical-align:middle}
+    th{background:linear-gradient(180deg,#fbfdff,#f3f8ff);position:sticky;top:0;z-index:1;font-weight:600}
+    tbody tr:nth-child(even) td{background:#fcfdff}
+    tbody tr:hover td{background:#f7faff}
+    thead tr:last-child th{background:#ffffff;position:sticky;top:42px}
+    .badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;background:#f1f5f9;color:#334155}
     .paid{background:#dcfce7;color:#14532d}
     .unpaid{background:#fee2e2;color:#991b1b}
     .stats{display:flex;gap:12px;flex-wrap:wrap}
-    .stat{padding:8px 12px;background:#f8fafc;border-radius:8px}
+    .stat{padding:10px 12px;background:#f8fafc;border-radius:10px;border:1px solid #eef2f6;display:flex;align-items:center;gap:8px}
     .small{font-size:12px;color:#475569}
-    .muted{color:#6b7280}
+    .muted{color:var(--muted)}
     .search{flex:1;min-width:200px}
-    .table-wrap{max-height:60vh;overflow:auto}
-    .action-link{cursor:pointer;color:#0b63e6;text-decoration:underline}
+    .table-wrap{max-height:60vh;overflow:auto;border-radius:10px;border:1px solid var(--border);background:#fff}
+    .action-link{cursor:pointer;color:var(--primary);text-decoration:none}
+    .eye{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:var(--primary-weak);color:var(--primary)}
+    .eye:hover{filter:brightness(0.97)}
+    .eye.active{background:var(--primary);color:#fff}
+    .divider{height:1px;background:#eef2f6;margin:8px 0}
+    @media (max-width: 720px){
+      body{padding:12px}
+      h1{font-size:18px}
+      .controls{gap:6px}
+      button, input[type=text], select{width:100%}
+      .table-wrap{max-height:none}
+      th,td{padding:8px;font-size:14px}
+      .stat{width:100%;justify-content:space-between}
+    }
   </style>
 </head>
 <body>
@@ -77,7 +99,6 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
       <button id="exportExcel">Export Excel</button>
       <button id="exportCsv" class="ghost">Export CSV</button>
       <button id="clearFilters" class="ghost">Clear Filters</button>
-      <select id="filterPaid"><option value="all">Paid/Unpaid</option><option value="paid">Paid</option><option value="unpaid">Unpaid</option></select>
       <input id="searchBox" class="search" type="text" placeholder="Search name/flat/contact..." />
     </div>
   </div>
@@ -93,7 +114,6 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
   <script>
     const exportExcelBtn = document.getElementById('exportExcel');
     const exportCsvBtn = document.getElementById('exportCsv');
-    const filterPaidEl = document.getElementById('filterPaid');
     const clearFiltersBtn = document.getElementById('clearFilters');
     const searchBox = document.getElementById('searchBox');
     const statsDiv = document.getElementById('stats');
@@ -112,6 +132,7 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
     let expensesData = [];
     let expensesColumnFilters = {};
     let currentTab = 'collected'; // collected | expenses | future1 | future2
+    let paidView = 'all'; // all | paid | unpaid
     let ADMIN_PASSWORD = 'admin123';
     let UPDATE_ENDPOINT = null; // optional, can be set via config.json
     let UPDATE_BLOB_SAS_URL = null; // optional SAS URL with write perms to maintenance_data.json
@@ -174,9 +195,13 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
       const collected = data.reduce((s,r)=>s + (parseFloat(r.Amount||0)||0),0);
       statsDiv.innerHTML = `
         <div class="stat"><strong>${total}</strong> total</div>
-        <div class="stat"><strong>${paid}</strong> paid</div>
-        <div class="stat"><strong>${unpaid}</strong> unpaid</div>
+        <div class="stat"><strong>${paid}</strong> paid <span id="paidEye" class="eye${paidView==='paid'?' active':''}" title="View paid">👁</span></div>
+        <div class="stat"><strong>${unpaid}</strong> unpaid <span id="unpaidEye" class="eye${paidView==='unpaid'?' active':''}" title="View unpaid">👁</span></div>
       `;
+      const paidEye = document.getElementById('paidEye');
+      const unpaidEye = document.getElementById('unpaidEye');
+      if(paidEye){ paidEye.addEventListener('click',()=>{ paidView = (paidView==='paid' ? 'all' : 'paid'); render(); }); }
+      if(unpaidEye){ unpaidEye.addEventListener('click',()=>{ paidView = (paidView==='unpaid' ? 'all' : 'unpaid'); render(); }); }
     }
 
     function renderExpensesStats(data){
@@ -220,7 +245,7 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
     }
 
     function getCollectedBaseFiltered(){
-      const filter = filterPaidEl.value;
+      const filter = paidView;
       const q = (searchBox.value||'').trim().toLowerCase();
       const selectedMonth = monthFilter.value;
       return rawData.filter(row=>{
@@ -262,6 +287,8 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
 
       const cols = Object.keys(display[0]).filter(c=>!c.startsWith('__'));
       const table = document.createElement('table');
+      table.className = 'table';
+      table.className = 'table';
       const thead = document.createElement('thead');
       const trh = document.createElement('tr');
       cols.forEach(c=>{ const th = document.createElement('th'); th.textContent = c; trh.appendChild(th); });
@@ -303,7 +330,12 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
         const tr = document.createElement('tr');
         cols.forEach(c=>{
           const td = document.createElement('td');
-          td.textContent = row[c] == null ? '' : row[c];
+          if(c==='Paid'){
+            const isPaid = !!row.__paid;
+            td.innerHTML = isPaid ? '<span class="badge paid">Paid</span>' : '<span class="badge unpaid">Unpaid</span>';
+          }else{
+            td.textContent = row[c] == null ? '' : row[c];
+          }
           tr.appendChild(td);
         });
         // Actions cell
@@ -410,10 +442,8 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
     function applyTabVisibility(){
       // Show/hide controls based on tab
       if(currentTab==='collected'){
-        filterPaidEl.style.display='';
         monthFilter.style.display='';
       }else{
-        filterPaidEl.style.display=''; // keep export/search buttons visible
         monthFilter.style.display='';
       }
     }
@@ -501,8 +531,8 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
       if(search){ badges.push(`<span class="badge">Search: ${escapeHtml(search)}</span>`); }
       if(currentTab==='collected'){
         if(monthFilter.value && monthFilter.value!=='all') badges.push(`<span class="badge">Month: ${escapeHtml(monthFilter.value)}</span>`);
-        if(filterPaidEl.value==='paid') badges.push('<span class="badge">Paid</span>');
-        if(filterPaidEl.value==='unpaid') badges.push('<span class="badge">Unpaid</span>');
+        if(paidView==='paid') badges.push('<span class="badge">Paid</span>');
+        if(paidView==='unpaid') badges.push('<span class="badge">Unpaid</span>');
         for(const k in columnFilters){
           const v = columnFilters[k]; if(v) badges.push(`<span class="badge">${escapeHtml(k)}: ${escapeHtml(String(v))}</span>`);
         }
@@ -675,7 +705,6 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
       monthFilter.innerHTML = options.join('');
     }
 
-    filterPaidEl.addEventListener('change', render);
     monthFilter.addEventListener('change', render);
     searchBox.addEventListener('input', debounce(render,300));
     tabCollectedBtn.addEventListener('click',()=>{ currentTab='collected'; columnFilters={}; tabCollectedBtn.classList.remove('ghost'); tabExpensesBtn.classList.add('ghost'); render(); });
@@ -687,7 +716,7 @@ Maintenance Tracker - JSON version (data pulled from Azure Blob Storage)
     // Clear all filters (common button)
     clearFiltersBtn.addEventListener('click',()=>{
       searchBox.value='';
-      filterPaidEl.value='all';
+      paidView='all';
       monthFilter.value='all';
       columnFilters={};
       expensesColumnFilters={};
